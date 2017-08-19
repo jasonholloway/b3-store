@@ -1,5 +1,6 @@
 import sbt.Keys.mainClass
 import sbt.addCompilerPlugin
+import ReleaseTransformations._
 
 val commonSettings = Seq(
   organization:="woodpigeon",
@@ -22,6 +23,19 @@ lazy val store = (project in file("store"))
       "org.scalatest" %% "scalatest" % "3.0.1" % "test",
       "com.ironcorelabs" %% "cats-scalatest" % "2.2.0" % "test",
       "com.amazonaws" % "aws-lambda-java-core" % "1.1.0"
+    ),
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,
+      inquireVersions,
+      runClean,
+      runTest,
+      setReleaseVersion,
+      commitReleaseVersion,
+      tagRelease,
+//      publishArtifacts,
+      setNextVersion,
+      commitNextVersion,
+      pushChanges
     )
   ))
   .enablePlugins(PackPlugin)
