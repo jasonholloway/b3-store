@@ -11,6 +11,13 @@ val commonSettings = Seq(
 
 lazy val root = project in file(".")
 
+
+val publishLambda = (ref: ProjectRef) => ReleaseStep(
+  check = identity,
+  action = identity
+)
+
+
 lazy val store = (project in file("store"))
   .settings(commonSettings ++ Seq(
     name:="store",
@@ -23,19 +30,22 @@ lazy val store = (project in file("store"))
       "com.ironcorelabs" %% "cats-scalatest" % "2.2.0" % "test",
       "com.amazonaws" % "aws-lambda-java-core" % "1.1.0"
     ),
-    releaseProcess := Seq[ReleaseStep](
-      checkSnapshotDependencies,
-      inquireVersions,
-      runClean,
-      runTest,
-      setReleaseVersion,
-      commitReleaseVersion,
-      tagRelease,
-//      publishArtifacts,
-      setNextVersion,
-      commitNextVersion,
-      pushChanges
-    )
+    releaseProcess <<= thisProjectRef apply { ref =>
+      Seq[ReleaseStep](
+        checkSnapshotDependencies,
+        inquireVersions,
+        runClean,
+        runTest,
+        setReleaseVersion,
+        commitReleaseVersion,
+        tagRelease,
+        publishLambda(ref),
+        //publishArtifacts,
+        setNextVersion,
+        commitNextVersion,
+        pushChanges
+      )
+    }
   ))
   .enablePlugins(PackPlugin)
   .dependsOn(macros)
