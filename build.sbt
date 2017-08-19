@@ -4,7 +4,6 @@ import ReleaseTransformations._
 
 val commonSettings = Seq(
   organization:="woodpigeon",
-  version:="0.0.2",
   scalaVersion:="2.12.2",
   resolvers += Resolver.sonatypeRepo("releases"),
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
