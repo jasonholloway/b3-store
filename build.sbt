@@ -1,6 +1,7 @@
 import sbt.Keys.mainClass
 import sbt.addCompilerPlugin
 import ReleaseTransformations._
+import com.amazonaws.services.s3.AmazonS3ClientBuilder
 
 val commonSettings = Seq(
   organization:="woodpigeon",
@@ -14,7 +15,16 @@ lazy val root = project in file(".")
 
 val publishLambda = (ref: ProjectRef) => ReleaseStep(
   check = identity,
-  action = identity
+  action = { state =>
+    val extracted = Project.extract(state)
+
+    val s3 = AmazonS3ClientBuilder.defaultClient()
+    val res = s3.putObject("woodpigeon-images", "test.jar", file("run.sh"))
+    println(res.toString)
+
+    //publish here, eh
+    state
+  }
 )
 
 lazy val store = (project in file("store"))
@@ -29,27 +39,20 @@ lazy val store = (project in file("store"))
       "com.ironcorelabs" %% "cats-scalatest" % "2.2.0" % "test",
       "com.amazonaws" % "aws-lambda-java-core" % "1.1.0"
     ),
-    releaseProcess := { (ref: ProjectRef, old: Seq[ReleaseStep]) => old.map {
-      case `publishArtifacts` => publishLambda(thisProjectRef.value);
-      case x => x
-    } }.apply(thisProjectRef.value, releaseProcess.value),
-
-//    releaseProcess := Seq[ReleaseStep](
-//      checkSnapshotDependencies,
-//      inquireVersions,
-//      runClean,
-//      runTest,
-//      setReleaseVersion,
-//      commitReleaseVersion,
-//      tagRelease,
-//      publishLambda(thisProjectRef.value),
-//      //publishArtifacts,
-//      setNextVersion,
-//      commitNextVersion,
-//      pushChanges
-//    )
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,
+      inquireVersions,
+      runClean,
+      runTest,
+      setReleaseVersion,
+      commitReleaseVersion,
+      tagRelease,
+      publishLambda(thisProjectRef.value),
+      setNextVersion,
+      commitNextVersion,
+      pushChanges
+    )
   ))
-  .enablePlugins(PackPlugin)
   .dependsOn(macros)
 
 lazy val `lambda-runner` = (project in file("lambda-runner"))
