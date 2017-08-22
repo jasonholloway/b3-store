@@ -1,9 +1,6 @@
 import sbt.Keys.mainClass
 import sbt.addCompilerPlugin
 import ReleaseTransformations._
-import com.amazonaws.services.lambda.{AWSLambdaClientBuilder, model}
-import com.amazonaws.services.lambda.model.UpdateFunctionCodeRequest
-import com.amazonaws.services.s3.AmazonS3ClientBuilder
 
 val commonSettings = Seq(
   organization:="woodpigeon",
@@ -14,23 +11,6 @@ val commonSettings = Seq(
 
 lazy val root = project in file(".")
 
-
-val publishLambda = (ref: ProjectRef) => ReleaseStep(
-  check = identity,
-  action = { st =>
-    val state = Project.extract(st)
-
-    val s3Client = AmazonS3ClientBuilder.defaultClient
-    val lambdaClient = AWSLambdaClientBuilder.defaultClient
-
-    s3Client.putObject("woodpigeon-images", "test.jar", file("run.sh"))
-    lambdaClient.updateFunctionCode(new UpdateFunctionCodeRequest()
-                                        .withFunctionName("")
-                                        .withS3Bucket("woodpigeon-images")
-                                        .withS3Key("test.jar"))
-    st
-  }
-)
 
 lazy val store = (project in file("store"))
   .settings(commonSettings ++ Seq(
@@ -44,21 +24,21 @@ lazy val store = (project in file("store"))
       "com.ironcorelabs" %% "cats-scalatest" % "2.2.0" % "test",
       "com.amazonaws" % "aws-lambda-java-core" % "1.1.0"
     ),
-    releaseProcess := Seq[ReleaseStep](
-      checkSnapshotDependencies,
-      inquireVersions,
-      runClean,
-      runTest,
-      setReleaseVersion,
-      commitReleaseVersion,
-      tagRelease,
-      publishLambda(thisProjectRef.value),
-      setNextVersion,
-      commitNextVersion,
-      pushChanges
-    )
+//    releaseProcess := Seq[ReleaseStep](
+//      checkSnapshotDependencies,
+//      inquireVersions,
+//      runClean,
+//      runTest,
+//      setReleaseVersion,
+//      commitReleaseVersion,
+//      tagRelease,
+//      publishLambda(thisProjectRef.value),
+//      setNextVersion,
+//      commitNextVersion,
+//      pushChanges
+//    )
   ))
-  .enablePlugins(SbtProguard, AssemblyPlugin)
+  .enablePlugins(PublishLambdaPlugin)
   .dependsOn(macros)
 
 lazy val `lambda-runner` = (project in file("lambda-runner"))

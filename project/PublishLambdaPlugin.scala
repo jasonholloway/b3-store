@@ -4,24 +4,19 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder
 import com.typesafe.sbt.SbtProguard
 import com.typesafe.sbt.SbtProguard.autoImport._
-import sbt.PluginTrigger.AllRequirements
 import sbt.Keys._
 import sbtassembly.AssemblyPlugin
 import sbtassembly.AssemblyPlugin.autoImport.assembly
-import io.circe.syntax._
-import io.circe.generic.auto._
-import sbt.{AutoPlugin, TaskKey, ThisBuild}
-
-case class PackInfo(name: String, version: String, jarPath: String)
+import sbt.{AutoPlugin, TaskKey}
 
 
-object PackPlugin extends AutoPlugin {
+object PublishLambdaPlugin extends AutoPlugin {
 
-  override def trigger = AllRequirements
+  override def trigger = noTrigger
   override def requires = AssemblyPlugin && SbtProguard
 
   object autoImport {
-    lazy val pack = TaskKey[String]("pack", "assembles a fat jar, returns info as json")
+    lazy val publishLambda = TaskKey[Unit]("publishLambda", "assembles a fat jar, slims it down, uploads it to S3, points lambda towards it")
   }
 
   import autoImport._
@@ -29,16 +24,15 @@ object PackPlugin extends AutoPlugin {
   override def projectSettings = Seq(
       inputs in Proguard := Seq(assembly.value),
       javaOptions in (Proguard, proguard) := Seq("-Xmx2G"),
-      options in Proguard += ProguardOptions.keepMain("woodpigeon.bb.store.handler"),
+      options in Proguard += "-keep public class woodpigeon.bb.store.Handler { *; }",  // ProguardOptions.keepMain("woodpigeon.bb.store.Handler"),
       options in Proguard ++= Seq(
         "-dontoptimize",
         "-dontobfuscate",
         "-dontnote",
-        "-dontwarn",
-        "-keep,includedescriptorclasses class woodpigeon.bb.store.** { *; }"),
-      pack := {
+        "-dontwarn"),
+      publishLambda := {
         val log = streams.value.log
-        val key = s"""${name.value}-${version.value}"""
+        val key = s"""b3/${name.value}-${version.value}.jar"""
         val shrunk = (proguard in Proguard).value.head
 
         log.info(s"""uploading ${key} JAR to AWS S3""")
@@ -61,13 +55,11 @@ object PackPlugin extends AutoPlugin {
         val lambdaClient = AWSLambdaClientBuilder.defaultClient
 
         lambdaClient.updateFunctionCode(new UpdateFunctionCodeRequest()
-          .withFunctionName("wibble")
+          .withFunctionName("bb-commit")
           .withS3Bucket("woodpigeon-images")
           .withS3Key(key))
 
         log.info("done!")
-
-        "DONE!"
     }
   )
 

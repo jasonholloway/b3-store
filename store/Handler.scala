@@ -1,18 +1,18 @@
 package woodpigeon.bb.store
 
 import java.io.{InputStream, OutputStream}
-
 import scala.io.Source
-import com.amazonaws.services.lambda.runtime.Context
+import com.amazonaws.services.lambda.runtime.{Context}
 import io.circe.Json
 import io.circe.parser._
 
 class Handler {
-  def handle(input: InputStream, output: OutputStream, context: Context ) = {
+
+  def handle(input: InputStream, output: OutputStream, context: Context ) : Unit = {
     parseInput.flatMap { json =>
       decodeMessage(json).map(_ match {
         case Message(nop: Nop) => ()
-        case Message(update: Update[PutProduct]) => ()
+        case Message(update: Update[_]) => ()
         case _ => ()
       })
     }
