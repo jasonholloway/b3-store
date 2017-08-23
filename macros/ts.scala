@@ -4,6 +4,8 @@ import scala.annotation.StaticAnnotation
 
 object helloMacro {
   def impl(c: Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
+    println("Hello!")
+
     import c.universe._
     import Flag._
 //    val result = {

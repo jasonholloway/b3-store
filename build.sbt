@@ -54,8 +54,13 @@ lazy val `lambda-runner` = (project in file("lambda-runner"))
 
 lazy val macros = (project in file("macros"))
   .settings(commonSettings ++ Seq(
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.12.2",
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.12.2"
   ))
+
+lazy val `macros-test` = (project in file("macros-test"))
+  .settings(commonSettings)
+  .dependsOn(macros)
+
 
 
 lazy val packForAws = taskKey[Unit]("packages everything into one neat lambda JAR")
