@@ -3,8 +3,9 @@ import sbt.addCompilerPlugin
 import ReleaseTransformations._
 
 val commonSettings = Seq(
-  organization:="woodpigeon",
-  scalaVersion:="2.12.2",
+  organization :="woodpigeon",
+  scalaVersion := "2.12.2",
+  scalaSource := baseDirectory.value,
   resolvers += Resolver.sonatypeRepo("releases"),
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
 )
@@ -58,10 +59,25 @@ lazy val macros = (project in file("macros"))
   ))
 
 lazy val `macros-test` = (project in file("macros-test"))
-  .settings(commonSettings)
+  .settings(commonSettings ++ Seq(
+    addCompilerPlugin("woodpigeon" %% "ts-schema" % "0.0.1")
+  ))
   .dependsOn(macros)
 
 
+lazy val tsSchema = (project in file("ts-schema"))
+    .settings(
+      organization:="woodpigeon",
+      name:="ts-schema",
+      version:="0.0.1",
+      scalaVersion:="2.12.3",
+//      scalaSource:=baseDirectory.value,
+      libraryDependencies ++= Seq(
+        "org.scala-lang" % "scala-compiler" % "2.12.2",
+        "org.scala-lang" % "scala-reflect" % "2.12.2"
+      ),
+//      resources := Seq(baseDirectory.value / "scalac-plugin.xml")
+    )
 
 lazy val packForAws = taskKey[Unit]("packages everything into one neat lambda JAR")
 
