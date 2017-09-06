@@ -40,7 +40,6 @@ lazy val store = (project in file("store"))
 //    )
   ))
   .enablePlugins(PublishLambdaPlugin)
-  .dependsOn(macros)
 
 lazy val `lambda-runner` = (project in file("lambda-runner"))
   .settings(commonSettings ++ Seq(
@@ -50,34 +49,8 @@ lazy val `lambda-runner` = (project in file("lambda-runner"))
       "com.amazonaws" % "aws-lambda-java-core" % "1.1.0",
     )
   ))
-  .dependsOn(store, macros)
+  .dependsOn(store)
 
-
-lazy val macros = (project in file("macros"))
-  .settings(commonSettings ++ Seq(
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.12.2"
-  ))
-
-lazy val `macros-test` = (project in file("macros-test"))
-  .settings(commonSettings ++ Seq(
-    addCompilerPlugin("woodpigeon" %% "ts-schema" % "0.0.1")
-  ))
-  .dependsOn(macros)
-
-
-lazy val tsSchema = (project in file("ts-schema"))
-    .settings(
-      organization:="woodpigeon",
-      name:="ts-schema",
-      version:="0.0.1",
-      scalaVersion:="2.12.3",
-      libraryDependencies ++= Seq(
-        "org.scala-lang" % "scala-compiler" % "2.12.2",
-        "org.scala-lang" % "scala-reflect" % "2.12.2",
-        "org.scalactic" %% "scalactic" % "3.0.1" % "test",
-        "org.scalatest" %% "scalatest" % "3.0.1" % "test"
-      )
-    )
 
 lazy val packForAws = taskKey[Unit]("packages everything into one neat lambda JAR")
 
