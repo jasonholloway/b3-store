@@ -1,48 +1,45 @@
-package woodpigeon.bb.store
+package com.woodpigeon.b3.store
 
 import java.io.{InputStream, OutputStream}
-import scala.io.Source
-import com.amazonaws.services.lambda.runtime.{Context}
-import io.circe.Json
-import io.circe.parser._
+
+import com.amazonaws.services.lambda.runtime.Context
+
+import com.woodpigeon.b3.schema.v100
+//import com.woodpigeon.b3.schema.v100.Command.UpdateType
+//import com.woodpigeon.b3.schema.v100.{Command, Result}
 
 class Handler {
 
   def handle(input: InputStream, output: OutputStream, context: Context ) : Unit = {
-    parseInput.flatMap { json =>
-      decodeMessage(json).map(_ match {
-        case Message(nop: Nop) => ()
-        case Message(update: Update[_]) => ()
-        case _ => ()
-      })
+
+    val result = Command.parseFrom(input) match {
+      case Command(id, updateType) => {
+        println(updateType)
+        Result(true, id)
+      }
+      case _ => Result(false)
     }
 
-    def parseInput = {
-      val string = Source.fromInputStream(input).mkString
-      parse(string)
-    }
-
-    def decodeMessage(json: Json) = {
-      MessageDecoder.decodeJson(json)
-    }
+    result.writeTo(output)
   }
+
 }
 
 
-case class UpdateResponse(ok: Boolean)
+//case class UpdateResponse(ok: Boolean)
 
-trait UpdateStore {
-  def commit(update: Update[_])
-}
-
-trait UpdateRegistry {
-  def getVersion: UpdateId
-  def pushHead(id: UpdateId)
-}
-
-trait Lock {
-  def release(): Unit
-}
+//trait UpdateStore {
+//  def commit(update: Update)
+//}
+//
+//trait UpdateRegistry {
+//  def getVersion: UpdateId
+//  def pushHead(id: UpdateId)
+//}
+//
+//trait Lock {
+//  def release(): Unit
+//}
 
 
 //

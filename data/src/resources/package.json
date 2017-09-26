@@ -1,0 +1,13 @@
+{
+  "name": "@woodpigeon/b3-data",
+  "version": "0.0.1",
+  "description": "",
+  "main": "b3-data-fastopt.js",
+  "types": "b3-data.d.ts",
+  "files": [
+    "/",
+    "package.json"
+  ],
+  "author": "Jason Holloway",
+  "license": "ISC"
+}

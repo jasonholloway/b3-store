@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package com.woodpigeon.b3.schema;
+
+message Result {
+    bool ok = 1;
+    string id = 2;
+}
+
+message Command {
+    string id = 1;
+
+    oneof update_type {
+        PutProduct putProduct = 2;
+        DeleteProduct deleteProduct = 3;
+        PutStock putStock = 4;
+        PutImage putImage = 5;
+    }
+}
+
+message Nop { }
+
+message PutProduct {
+    string productId = 1;
+    string name = 2;
+}
+
+message DeleteProduct {
+    string productId = 1;
+}
+
+message PutStock {
+    string productId = 1;
+}
+
+message PutImage {
+    string entityId = 1;
+    string url = 2;
+}

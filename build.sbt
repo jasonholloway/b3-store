@@ -1,30 +1,67 @@
 import sbt.Keys.mainClass
-import sbt.addCompilerPlugin
-import ReleaseTransformations._
 
 val commonSettings = Seq(
-  organization :="woodpigeon",
-  scalaVersion := "2.12.2",
-  scalaSource := baseDirectory.value,
-  resolvers += Resolver.sonatypeRepo("releases"),
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
+  organization := "com.woodpigeon",
+  scalaVersion := "2.12.2"
 )
 
-lazy val root = project in file(".")
+val jsSettings = Seq(
+  target := target.value / "js",
+  scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) }
+)
+
+val jvmSettings = Seq(
+  libraryDependencies += "org.scala-js" %% "scalajs-stubs" % scalaJSVersion % "provided"
+)
+
+
+lazy val root = (project in file("."))
+//    .aggregate(`data-jvm`, `data-js`, `lambda-runner`)
+
+
+
+val schemaSettings = commonSettings ++ Seq(
+  name := "b3.schema",
+  libraryDependencies ++= Seq(
+    "com.trueaccord.scalapb" %%% "scalapb-runtime" % "0.6.5",
+ //   "com.trueaccord.scalapb" %%% "scalapb-runtime" % "0.6.5" % "protobuf"
+  )
+)
+
+lazy val schema = (project in file("schema"))
+  .settings(schemaSettings, jvmSettings)
+
+lazy val `schema-js` = (project in file("schema"))
+  .settings(schemaSettings, jsSettings)
+  .enablePlugins(ScalaJSPlugin)
+
+
+
+
+val dataSettings = commonSettings ++ Seq(
+  name := "b3.data"
+)
+
+lazy val `data-js` = (project in file("data"))
+    .settings(dataSettings, jsSettings)
+    .enablePlugins(ScalaJSPlugin)
+    .dependsOn(`schema-js`)
+
+lazy val data = (project in file("data"))
+    .settings(dataSettings, jvmSettings)
+    .dependsOn(schema)
 
 
 lazy val store = (project in file("store"))
   .settings(commonSettings ++ Seq(
-    name:="store",
+    name:="b3.store",
     libraryDependencies ++= Seq(
-      "io.circe" %% "circe-core" % "0.7.0",
-      "io.circe" %% "circe-parser" % "0.7.0",
-      "io.circe" %% "circe-generic" % "0.7.0",
+      "com.amazonaws" % "aws-lambda-java-core" % "1.1.0",
+      "commons-io" % "commons-io" % "2.5",
       "org.scalactic" %% "scalactic" % "3.0.1",
       "org.scalatest" %% "scalatest" % "3.0.1" % "test",
       "com.ironcorelabs" %% "cats-scalatest" % "2.2.0" % "test",
-      "com.amazonaws" % "aws-lambda-java-core" % "1.1.0"
-    ),
+    )
 //    releaseProcess := Seq[ReleaseStep](
 //      checkSnapshotDependencies,
 //      inquireVersions,
@@ -39,6 +76,7 @@ lazy val store = (project in file("store"))
 //      pushChanges
 //    )
   ))
+  .dependsOn(schema)
   .enablePlugins(PublishLambdaPlugin)
 
 lazy val `lambda-runner` = (project in file("lambda-runner"))
