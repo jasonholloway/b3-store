@@ -7,7 +7,12 @@ val commonSettings = Seq(
 
 val jsSettings = Seq(
   target := target.value / "js",
-  scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) }
+  scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
+  fastOptJS in Compile := {
+    IO.copyFile(file("data/src/main/resources/package.json"), file("data/target/js/scala-2.12/package.json"))
+    IO.copyFile(file("data/src/main/resources/index.d.ts"), file("data/target/js/scala-2.12/index.d.ts"))
+    (fastOptJS in Compile).value
+  }
 )
 
 val jvmSettings = Seq(
