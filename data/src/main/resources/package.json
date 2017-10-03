@@ -2,8 +2,8 @@
   "name": "@woodpigeon/b3-data",
   "version": "0.0.1",
   "description": "",
-  "main": "b3-data-fastopt.js",
-  "types": "b3-data.d.ts",
+  "main": "index.js",
+  "types": "index.d.ts",
   "files": [
     "/",
     "package.json"

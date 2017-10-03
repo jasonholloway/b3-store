@@ -5,13 +5,26 @@ val commonSettings = Seq(
   scalaVersion := "2.12.2"
 )
 
+lazy val packageNpm = taskKey[File]("pack into NPM package")
+
+
 val jsSettings = Seq(
   target := target.value / "js",
   scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
-  fastOptJS in Compile := {
-    IO.copyFile(file("data/src/main/resources/package.json"), file("data/target/js/scala-2.12/package.json"))
-    IO.copyFile(file("data/src/main/resources/index.d.ts"), file("data/target/js/scala-2.12/index.d.ts"))
-    (fastOptJS in Compile).value
+  packageNpm := {
+    val npmDir = target.value / "npm"
+
+    val fileMap = Seq(
+      ((fastOptJS in Compile).value.data, "index.js"),
+      (file("data/src/main/resources/package.json"), "package.json"),
+      (file("data/src/main/resources/index.d.ts"), "index.d.ts")
+    )
+
+    for((f, name) <- fileMap) {
+      IO.copyFile(f, npmDir / name)
+    }
+
+    npmDir
   }
 )
 
