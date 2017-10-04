@@ -11,13 +11,16 @@ lazy val packageNpm = taskKey[File]("pack into NPM package")
 val jsSettings = Seq(
   target := target.value / "js",
   scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
+  skip in packageJSDependencies := false,
   packageNpm := {
     val npmDir = target.value / "npm"
+    val resourceDir = (resources in Compile).value.head
 
     val fileMap = Seq(
       ((fastOptJS in Compile).value.data, "index.js"),
-      (file("data/src/main/resources/package.json"), "package.json"),
-      (file("data/src/main/resources/index.d.ts"), "index.d.ts")
+      ((packageJSDependencies in Compile).value, "deps.js"),
+      (resourceDir / "package.json", "package.json"),
+      (resourceDir / "index.d.ts", "index.d.ts")
     )
 
     for((f, name) <- fileMap) {
@@ -68,6 +71,17 @@ lazy val `data-js` = (project in file("data"))
 lazy val data = (project in file("data"))
     .settings(dataSettings, jvmSettings)
     .dependsOn(schema)
+
+
+
+lazy val `data-facade-js` = (project in file("data-facade"))
+    .settings(jsSettings,
+      libraryDependencies += "io.scalajs.npm" %%% "mpromise" % "0.4.1",
+      resolvers += Resolver.sonatypeRepo("releases")
+    )
+  .enablePlugins(ScalaJSPlugin)
+  .dependsOn(`data-js`)
+
 
 
 lazy val store = (project in file("store"))

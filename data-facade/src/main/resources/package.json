@@ -1,6 +1,6 @@
 {
   "name": "@woodpigeon/b3-data",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "main": "index.js",
   "types": "index.d.ts",
@@ -9,5 +9,8 @@
     "package.json"
   ],
   "author": "Jason Holloway",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "mpromise": "*"
+  }
 }

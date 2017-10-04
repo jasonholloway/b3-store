@@ -2,18 +2,16 @@ package com.woodpigeon.b3.data
 
 import java.io.InputStream
 
-import scala.scalajs.js.annotation.{JSExportAll, JSExportTopLevel}
+import scala.concurrent.Future
 
-@JSExportTopLevel("Data")
-@JSExportAll
 class Data {
 
-  def commit(updates: InputStream): Unit = {
-
+  def commit(updates: InputStream): Future[Unit] = {
+    Future.unit
   }
 
-  def flush(): Unit = {
-
+  def flush(): Future[Unit] = {
+    Future.unit
   }
 
   println("heyup")
