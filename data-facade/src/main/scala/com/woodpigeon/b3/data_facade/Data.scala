@@ -8,16 +8,15 @@ import io.scalajs.npm.mpromise._
 
 import scala.scalajs.js.annotation.{JSExportAll, JSExportTopLevel}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.scalajs.js.typedarray.{ArrayBuffer, Int8Array, TypedArrayBuffer, TypedArrayBufferOps, Uint8Array}
+import scala.scalajs.js.typedarray.Uint8Array
 
 @JSExportTopLevel("Data")
 @JSExportAll
 class Data() {
   val inner = new com.woodpigeon.b3.data.Data()
 
-  def commit(data: ArrayBuffer): Promise[Unit] = {
-    val typedArray = new Int8Array(data)
-    val stream = new ByteArrayInputStream(typedArray.toArray)
+  def commit(data: Uint8Array): Promise[Unit] = {
+    val stream = new ByteArrayInputStream(data.map(_.toByte).toArray)
     val promise = new Promise[Unit]()
 
     inner.commit(stream)
