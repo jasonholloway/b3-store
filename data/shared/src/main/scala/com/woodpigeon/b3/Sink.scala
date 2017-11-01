@@ -4,7 +4,7 @@ import java.io.InputStream
 
 import scala.concurrent.Future
 
-class Sink {
+class Sink(log: EventLog) {
 
   def commit(updates: InputStream): Future[Unit] = {
     Future.unit

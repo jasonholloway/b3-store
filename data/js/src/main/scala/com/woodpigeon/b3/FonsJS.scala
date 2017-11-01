@@ -5,11 +5,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js.Promise
 import scala.util.control.NonFatal
 
-@JSExportTopLevel("Font")
+@JSExportTopLevel("Fons")
 @JSExportAll
-class FontJS(logReader: LogReader) {
+class FonsJS(log: EventLog) {
 
-  val inner = new Font(logReader)
+  val inner = new Fons(log)
 
   def view(id: String) : Promise[Any] = {
     new Promise[Any]((resolve, reject) => {

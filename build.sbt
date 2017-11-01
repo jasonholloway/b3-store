@@ -67,7 +67,9 @@ lazy val dataJVM = data.jvm
 
 lazy val dataJS = data.js
     .settings(jsSettings,
-      libraryDependencies += "io.scalajs.npm" %%% "mpromise" % "0.4.1",
+      libraryDependencies ++= Seq(
+        "org.julienrf" %%% "faithful" % "1.0.0"
+      ),
       resolvers += Resolver.sonatypeRepo("releases")
     )
     .dependsOn(schema.js)
