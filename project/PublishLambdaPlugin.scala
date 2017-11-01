@@ -2,8 +2,7 @@ import com.amazonaws.services.lambda.AWSLambdaClientBuilder
 import com.amazonaws.services.lambda.model.UpdateFunctionCodeRequest
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder
-import com.typesafe.sbt.SbtProguard
-import com.typesafe.sbt.SbtProguard.autoImport._
+import com.lightbend.sbt.SbtProguard
 import sbt.Keys._
 import sbtassembly.AssemblyPlugin
 import sbtassembly.AssemblyPlugin.autoImport.assembly
@@ -20,12 +19,14 @@ object PublishLambdaPlugin extends AutoPlugin {
   }
 
   import autoImport._
+  import SbtProguard.autoImport._
+
 
   override def projectSettings = Seq(
-      inputs in Proguard := Seq(assembly.value),
+      proguardInputs in Proguard := Seq(assembly.value),
       javaOptions in (Proguard, proguard) := Seq("-Xmx2G"),
-      options in Proguard += "-keep public class woodpigeon.bb.store.Handler { *; }",  // ProguardOptions.keepMain("woodpigeon.bb.store.Handler"),
-      options in Proguard ++= Seq(
+      proguardOptions in Proguard += "-keep public class woodpigeon.bb.store.Handler { *; }",  // ProguardOptions.keepMain("woodpigeon.bb.store.Handler"),
+      proguardOptions in Proguard ++= Seq(
         "-dontoptimize",
         "-dontobfuscate",
         "-dontnote",
