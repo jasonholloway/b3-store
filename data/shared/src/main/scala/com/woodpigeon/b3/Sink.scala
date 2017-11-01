@@ -1,10 +1,10 @@
-package com.woodpigeon.b3.data
+package com.woodpigeon.b3
 
 import java.io.InputStream
 
 import scala.concurrent.Future
 
-class Data {
+class Sink {
 
   def commit(updates: InputStream): Future[Unit] = {
     Future.unit

@@ -40,60 +40,50 @@ lazy val root = (project in file("."))
 //    .aggregate(`data-jvm`, `data-js`, `lambda-runner`)
 
 
+lazy val schema = (crossProject in file("schema"))
+  .settings(commonSettings ++ Seq(
+    name := "b3.schema",
+    libraryDependencies ++= Seq(
+      "com.trueaccord.scalapb" %%% "scalapb-runtime" % "0.6.5",
+      //   "com.trueaccord.scalapb" %%% "scalapb-runtime" % "0.6.5" % "protobuf"
+    )
+  ))
 
-val schemaSettings = commonSettings ++ Seq(
-  name := "b3.schema",
-  libraryDependencies ++= Seq(
-    "com.trueaccord.scalapb" %%% "scalapb-runtime" % "0.6.5",
- //   "com.trueaccord.scalapb" %%% "scalapb-runtime" % "0.6.5" % "protobuf"
-  )
-)
+lazy val schemaJVM = schema.jvm
+    .settings(jvmSettings)
 
-lazy val schema = (project in file("schema"))
-  .settings(schemaSettings, jvmSettings)
-
-lazy val `schema-js` = (project in file("schema"))
-  .settings(schemaSettings, jsSettings)
-  .enablePlugins(ScalaJSPlugin)
-
-
-
-
-val dataSettings = commonSettings ++ Seq(
-  name := "b3.data"
-)
-
-lazy val `data-js` = (project in file("data"))
-    .settings(dataSettings, jsSettings)
+lazy val schemaJS = schema.js
+    .settings(jsSettings)
     .enablePlugins(ScalaJSPlugin)
-    .dependsOn(`schema-js`)
-
-lazy val data = (project in file("data"))
-    .settings(dataSettings, jvmSettings)
-    .dependsOn(schema)
 
 
 
-lazy val `data-facade-js` = (project in file("data-facade"))
+lazy val data = (crossProject in file("data"))
+    .settings(name := "b3.data")
+
+lazy val dataJVM = data.jvm
+    .settings(jvmSettings)
+    .dependsOn(schema.jvm)
+
+lazy val dataJS = data.js
     .settings(jsSettings,
       libraryDependencies += "io.scalajs.npm" %%% "mpromise" % "0.4.1",
       resolvers += Resolver.sonatypeRepo("releases")
     )
-  .enablePlugins(ScalaJSPlugin)
-  .dependsOn(`data-js`)
+    .dependsOn(schema.js)
+    .enablePlugins(ScalaJSPlugin)
 
 
-
-lazy val store = (project in file("store"))
-  .settings(commonSettings ++ Seq(
-    name:="b3.store",
-    libraryDependencies ++= Seq(
-      "com.amazonaws" % "aws-lambda-java-core" % "1.1.0",
-      "commons-io" % "commons-io" % "2.5",
-      "org.scalactic" %% "scalactic" % "3.0.1",
-      "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-      "com.ironcorelabs" %% "cats-scalatest" % "2.2.0" % "test",
-    )
+//lazy val store = (project in file("store"))
+//  .settings(commonSettings ++ Seq(
+//    name:="b3.store",
+//    libraryDependencies ++= Seq(
+//      "com.amazonaws" % "aws-lambda-java-core" % "1.1.0",
+//      "commons-io" % "commons-io" % "2.5",
+//      "org.scalactic" %% "scalactic" % "3.0.1",
+//      "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+//      "com.ironcorelabs" %% "cats-scalatest" % "2.2.0" % "test",
+//    )
 //    releaseProcess := Seq[ReleaseStep](
 //      checkSnapshotDependencies,
 //      inquireVersions,
@@ -107,9 +97,9 @@ lazy val store = (project in file("store"))
 //      commitNextVersion,
 //      pushChanges
 //    )
-  ))
-  .dependsOn(schema)
-  .enablePlugins(PublishLambdaPlugin)
+//  ))
+//  .dependsOn(schema)
+//  .enablePlugins(PublishLambdaPlugin)
 
 lazy val `lambda-runner` = (project in file("lambda-runner"))
   .settings(commonSettings ++ Seq(
@@ -119,7 +109,7 @@ lazy val `lambda-runner` = (project in file("lambda-runner"))
       "com.amazonaws" % "aws-lambda-java-core" % "1.1.0",
     )
   ))
-  .dependsOn(store)
+  .dependsOn(dataJVM)
 
 
 lazy val packForAws = taskKey[Unit]("packages everything into one neat lambda JAR")
@@ -127,4 +117,3 @@ lazy val packForAws = taskKey[Unit]("packages everything into one neat lambda JA
 packForAws := {
   println("hello!")
 }
-

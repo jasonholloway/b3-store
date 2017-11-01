@@ -1,5 +1,5 @@
 {
-  "name": "@woodpigeon/b3-data",
+  "name": "@woodpigeon/b3-hydrator",
   "version": "0.0.2",
   "description": "",
   "main": "index.js",

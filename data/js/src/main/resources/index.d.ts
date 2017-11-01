@@ -1,3 +1,11 @@
+declare module '@woodpigeon/b3-hydrator' {
+
+    export class Hydrator {
+        view(id: String): Any;
+    }
+
+}
+
 declare module '@woodpigeon/b3-data' {
 
     export interface IData {

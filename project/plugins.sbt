@@ -17,4 +17,8 @@ addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.5")
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.6")
 addSbtPlugin("com.typesafe.sbt" % "sbt-proguard" % "0.2.5-SNAPSHOT")
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.20")
+
+//addSbtPlugin("org.scala-native" % "sbt-crossproject"         % "0.2.2")
+//addSbtPlugin("org.scala-native" % "sbt-scalajs-crossproject" % "0.2.2")
+
 //addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.12-rc6" exclude ("com.trueaccord.scalapb", "protoc-bridge_2.10"))

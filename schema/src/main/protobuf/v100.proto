@@ -2,6 +2,17 @@ syntax = "proto3";
 
 package com.woodpigeon.b3.schema;
 
+
+message Product {
+    string name = 1;
+}
+
+message Category {
+    string name = 1;
+}
+
+
+
 message Result {
     bool ok = 1;
     string id = 2;
