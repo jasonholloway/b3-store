@@ -10,8 +10,8 @@ import scala.scalajs.js.typedarray.Uint8Array
 
 @JSExportTopLevel("Sink")
 @JSExportAll
-class SinkJS(log: EventLog) {
-  val inner = new Sink(log)
+class SinkJS(log: EventLogJS) {
+  val inner = new Sink(new EventLog {})
 
   def commit(data: Uint8Array): Promise[Unit] = {
     val stream = new ByteArrayInputStream(data.map(_.toByte).toArray)
