@@ -1,14 +1,17 @@
 package com.woodpigeon.b3
 
 import com.woodpigeon.b3.JSTypes._
-import faithful.Promise
+
+import scala.scalajs.js.Promise
+//import faithful.Promise
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.{JSExportAll, JSExportTopLevel}
 
 object JSTypes {
-  type EventReader = js.Function1[Any, Promise[Any]]
-  type EventWriter = js.Function1[Any, Promise[Boolean]]
+  type RefMap[P] = js.Dictionary[P]
+  type EventReader = js.Function1[RefMap[Any], Promise[RefMap[Any]]]
+  type EventWriter = js.Function1[RefMap[Any], Promise[Boolean]]
 }
 
 

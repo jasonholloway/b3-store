@@ -17,17 +17,17 @@ declare module '@woodpigeon/b3-data' {
 
     export class Fons {
         constructor(eventLog: EventLog)
-        view(id: String): Any;
+        view(id: String): Promise<Int8Array>;
     }
 
     export interface ISink {
-        commit(data: Uint8Array): Promise<void>;
+        commit(data: Int8Array): Promise<void>;
         flush(): Promise<void>;
     }
 
     export class Sink implements ISink {
         constructor(eventLog: EventLog);
-        commit(data: Uint8Array): Promise<void>;
+        commit(data: Int8Array): Promise<void>;
         flush(): Promise<void>;
     }
 

@@ -1,33 +1,28 @@
 package com.woodpigeon.b3
 
 import java.io.ByteArrayInputStream
-
-import faithful.Promise
-
 import scala.scalajs.js.annotation.{JSExportAll, JSExportTopLevel}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.scalajs.js.typedarray.Uint8Array
+import scala.concurrent.Future
+import scala.scalajs.js.typedarray.Int8Array
+import scala.scalajs.js.JSConverters._
+import scala.scalajs.js.Promise
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.async.Async.{async, await}
 
 @JSExportTopLevel("Sink")
 @JSExportAll
 class SinkJS(log: EventLogJS) {
+
   val inner = new Sink(new EventLog {})
 
-  def commit(data: Uint8Array): Promise[Unit] = {
-    val stream = new ByteArrayInputStream(data.map(_.toByte).toArray)
-    val promise = new Promise[Unit]()
+  def commit(data: Int8Array): Promise[Unit] = async {
+    val stream = new ByteArrayInputStream(data.toArray)
+    await { inner.commit(stream) }
+    stream.close()
+  }.toJSPromise
 
-    inner.commit(stream)
-      .map(_ => stream.close())
-      .map(_ => promise.success())
+  def flush(): Promise[Unit] =
+    inner.flush().toJSPromise
 
-    promise
-  }
-
-  def flush(): Promise[Unit] = {
-    inner.flush()
-    val promise = new Promise[Unit]()
-    promise.success()
-    promise
-  }
 }

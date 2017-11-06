@@ -59,7 +59,12 @@ lazy val schemaJS = schema.js
 
 
 lazy val data = (crossProject in file("data"))
-    .settings(name := "b3.data")
+    .settings(
+      name := "b3.data",
+      libraryDependencies ++= Seq(
+        "org.scala-lang.modules" %% "scala-async" % "0.9.6"
+      )
+    )
 
 lazy val dataJVM = data.jvm
     .settings(jvmSettings)

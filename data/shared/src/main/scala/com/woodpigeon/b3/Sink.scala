@@ -1,20 +1,19 @@
 package com.woodpigeon.b3
 
 import java.io.InputStream
-
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class Sink(log: EventLog) {
 
-  def commit(updates: InputStream): Future[Unit] = {
-    Future.unit
+  def commit(updates: InputStream): Future[Unit] = Future {
+    //...
   }
 
-  def flush(): Future[Unit] = {
-    Future.unit
+  def flush(): Future[Unit] = Future {
+    //...
   }
 
-  println("heyup")
 }
 
 //it'd be problematic to expect json-serialized updates into the data store...
