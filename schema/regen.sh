@@ -1,4 +1,3 @@
-#!/bin/bash
-set -x
+#!/bin/bash -x
 
-scalapbc ./src/main/protobuf/v100.proto --scala_out=../scala
+scalapbc ./shared/src/main/protobuf/v100.proto --scala_out=./shared/src/main/scala/

@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package com.woodpigeon.b3.schema;
+
+
+message Payload {
+    repeated Update updates = 1;
+}
+
+message Update {
+    string ref = 1;
+    uint32 version = 2;
+    oneof inner {
+        AddNote addNote = 7;
+    }
+}
+
+
+message NoteList {
+    repeated string notes = 1;
+}
+
+message AddNote {
+    string note = 1;
+}
+
+
+message PutProduct {
+    string productId = 1;
+    string name = 2;
+}
+
+message DeleteProduct {
+    string productId = 1;
+}
+
+message PutStock {
+    string productId = 1;
+}
+
+message PutImage {
+    string entityId = 1;
+    string url = 2;
+}
+
