@@ -1,7 +1,6 @@
 
 declare module '@woodpigeon/b3-data' {
 
-
     export type EventData = {  }
     export type EventOffset = Number
 
@@ -10,23 +9,22 @@ declare module '@woodpigeon/b3-data' {
     export type EventReader = (ranges: RefMap<EventOffset>) => Promise<RefMap<EventData>>
     export type EventWriter = (events: RefMap<EventData>) => Promise<Boolean>
 
+    export interface IEventLog { }
 
-    export class EventLog {
+    export class AdHocEventLog implements IEventLog {
         constructor(read: EventReader, write: EventWriter);
     }
 
+    export class InMemoryEventLog implements IEventLog {
+    }
+
     export class Fons {
-        constructor(eventLog: EventLog)
-        view(id: String): Promise<Int8Array>;
+        constructor(eventLog: IEventLog)
+        view(streamRef: String, aggrType: String): Promise<Int8Array>;
     }
 
-    export interface ISink {
-        commit(data: Int8Array): Promise<void>;
-        flush(): Promise<void>;
-    }
-
-    export class Sink implements ISink {
-        constructor(eventLog: EventLog);
+    export class Sink {
+        constructor(eventLog: IEventLog);
         commit(data: Int8Array): Promise<void>;
         flush(): Promise<void>;
     }

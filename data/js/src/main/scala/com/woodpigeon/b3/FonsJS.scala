@@ -9,12 +9,12 @@ import scala.async.Async.{async, await}
 
 @JSExportTopLevel("Fons")
 @JSExportAll
-class FonsJS(log: EventLogJS) {
+class FonsJS(log: EventLog) {
 
-  val inner = new Fons(new EventLog {})
+  val inner = new Fons(new InMemoryEventLog())
 
-  def view(id: String) : Promise[Int8Array] = async {
-    val message = await { inner.view(id) }
+  def view(streamRef: String, aggrType: String) : Promise[Int8Array] = async {
+    val message = await { inner.view(streamRef, aggrType) }
     message.toByteArray.toTypedArray
   }.toJSPromise
 
