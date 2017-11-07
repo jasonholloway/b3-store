@@ -9,13 +9,13 @@ package com.woodpigeon.b3.schema.v100
 
 @SerialVersionUID(0L)
 final case class Payload(
-    updates: _root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.Update] = _root_.scala.collection.Seq.empty
+    eventLists: _root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.EventList] = _root_.scala.collection.Seq.empty
     ) extends com.trueaccord.scalapb.GeneratedMessage with com.trueaccord.scalapb.Message[Payload] with com.trueaccord.lenses.Updatable[Payload] {
     @transient
     private[this] var __serializedSizeCachedValue: Int = 0
     private[this] def __computeSerializedValue(): Int = {
       var __size = 0
-      updates.foreach(updates => __size += 1 + _root_.com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag(updates.serializedSize) + updates.serializedSize)
+      eventLists.foreach(eventLists => __size += 1 + _root_.com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag(eventLists.serializedSize) + eventLists.serializedSize)
       __size
     }
     final override def serializedSize: Int = {
@@ -27,41 +27,41 @@ final case class Payload(
       read
     }
     def writeTo(`_output__`: _root_.com.google.protobuf.CodedOutputStream): Unit = {
-      updates.foreach { __v =>
+      eventLists.foreach { __v =>
         _output__.writeTag(1, 2)
         _output__.writeUInt32NoTag(__v.serializedSize)
         __v.writeTo(_output__)
       };
     }
     def mergeFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): com.woodpigeon.b3.schema.v100.Payload = {
-      val __updates = (_root_.scala.collection.immutable.Vector.newBuilder[com.woodpigeon.b3.schema.v100.Update] ++= this.updates)
+      val __eventLists = (_root_.scala.collection.immutable.Vector.newBuilder[com.woodpigeon.b3.schema.v100.EventList] ++= this.eventLists)
       var _done__ = false
       while (!_done__) {
         val _tag__ = _input__.readTag()
         _tag__ match {
           case 0 => _done__ = true
           case 10 =>
-            __updates += _root_.com.trueaccord.scalapb.LiteParser.readMessage(_input__, com.woodpigeon.b3.schema.v100.Update.defaultInstance)
+            __eventLists += _root_.com.trueaccord.scalapb.LiteParser.readMessage(_input__, com.woodpigeon.b3.schema.v100.EventList.defaultInstance)
           case tag => _input__.skipField(tag)
         }
       }
       com.woodpigeon.b3.schema.v100.Payload(
-          updates = __updates.result()
+          eventLists = __eventLists.result()
       )
     }
-    def clearUpdates = copy(updates = _root_.scala.collection.Seq.empty)
-    def addUpdates(__vs: com.woodpigeon.b3.schema.v100.Update*): Payload = addAllUpdates(__vs)
-    def addAllUpdates(__vs: TraversableOnce[com.woodpigeon.b3.schema.v100.Update]): Payload = copy(updates = updates ++ __vs)
-    def withUpdates(__v: _root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.Update]): Payload = copy(updates = __v)
+    def clearEventLists = copy(eventLists = _root_.scala.collection.Seq.empty)
+    def addEventLists(__vs: com.woodpigeon.b3.schema.v100.EventList*): Payload = addAllEventLists(__vs)
+    def addAllEventLists(__vs: TraversableOnce[com.woodpigeon.b3.schema.v100.EventList]): Payload = copy(eventLists = eventLists ++ __vs)
+    def withEventLists(__v: _root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.EventList]): Payload = copy(eventLists = __v)
     def getFieldByNumber(__fieldNumber: Int): scala.Any = {
       (__fieldNumber: @_root_.scala.unchecked) match {
-        case 1 => updates
+        case 1 => eventLists
       }
     }
     def getField(__field: _root_.scalapb.descriptors.FieldDescriptor): _root_.scalapb.descriptors.PValue = {
       require(__field.containingMessage eq companion.scalaDescriptor)
       (__field.number: @_root_.scala.unchecked) match {
-        case 1 => _root_.scalapb.descriptors.PRepeated(updates.map(_.toPMessage)(_root_.scala.collection.breakOut))
+        case 1 => _root_.scalapb.descriptors.PRepeated(eventLists.map(_.toPMessage)(_root_.scala.collection.breakOut))
       }
     }
     override def toString: String = _root_.com.trueaccord.scalapb.TextFormat.printToUnicodeString(this)
@@ -74,23 +74,23 @@ object Payload extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.wood
     require(__fieldsMap.keys.forall(_.getContainingType() == javaDescriptor), "FieldDescriptor does not match message type.")
     val __fields = javaDescriptor.getFields
     com.woodpigeon.b3.schema.v100.Payload(
-      __fieldsMap.getOrElse(__fields.get(0), Nil).asInstanceOf[_root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.Update]]
+      __fieldsMap.getOrElse(__fields.get(0), Nil).asInstanceOf[_root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.EventList]]
     )
   }
   implicit def messageReads: _root_.scalapb.descriptors.Reads[com.woodpigeon.b3.schema.v100.Payload] = _root_.scalapb.descriptors.Reads{
     case _root_.scalapb.descriptors.PMessage(__fieldsMap) =>
       require(__fieldsMap.keys.forall(_.containingMessage == scalaDescriptor), "FieldDescriptor does not match message type.")
       com.woodpigeon.b3.schema.v100.Payload(
-        __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.Update]]).getOrElse(_root_.scala.collection.Seq.empty)
+        __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.EventList]]).getOrElse(_root_.scala.collection.Seq.empty)
       )
     case _ => throw new RuntimeException("Expected PMessage")
   }
-  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = V100Proto.javaDescriptor.getMessageTypes.get(0)
-  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = V100Proto.scalaDescriptor.messages(0)
+  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = V100Proto.javaDescriptor.getMessageTypes.get(1)
+  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = V100Proto.scalaDescriptor.messages(1)
   def messageCompanionForFieldNumber(__number: Int): _root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_] = {
     var __out: _root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_] = null
     (__number: @_root_.scala.unchecked) match {
-      case 1 => __out = com.woodpigeon.b3.schema.v100.Update
+      case 1 => __out = com.woodpigeon.b3.schema.v100.EventList
     }
     __out
   }
@@ -99,7 +99,7 @@ object Payload extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.wood
   lazy val defaultInstance = com.woodpigeon.b3.schema.v100.Payload(
   )
   implicit class PayloadLens[UpperPB](_l: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.Payload]) extends _root_.com.trueaccord.lenses.ObjectLens[UpperPB, com.woodpigeon.b3.schema.v100.Payload](_l) {
-    def updates: _root_.com.trueaccord.lenses.Lens[UpperPB, _root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.Update]] = field(_.updates)((c_, f_) => c_.copy(updates = f_))
+    def eventLists: _root_.com.trueaccord.lenses.Lens[UpperPB, _root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.EventList]] = field(_.eventLists)((c_, f_) => c_.copy(eventLists = f_))
   }
-  final val UPDATES_FIELD_NUMBER = 1
+  final val EVENTLISTS_FIELD_NUMBER = 1
 }
