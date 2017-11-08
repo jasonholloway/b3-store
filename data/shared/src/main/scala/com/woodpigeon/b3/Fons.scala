@@ -20,3 +20,14 @@ class Fons(log: EventLog) {
   }
 
 }
+
+
+object Fons {
+  implicit class Extensions(fons: Fons) {
+    def viewAs[V](streamRef: String, aggrType: String): Future[V] =
+      fons.view(streamRef, aggrType).map(_.asInstanceOf[V])
+
+  }
+}
+
+

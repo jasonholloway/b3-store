@@ -33,7 +33,9 @@ val jsSettings = Seq(
 )
 
 val jvmSettings = Seq(
-  libraryDependencies += "org.scala-js" %% "scalajs-stubs" % scalaJSVersion % "provided"
+  libraryDependencies ++= Seq(
+    "org.scala-js" %% "scalajs-stubs" % scalaJSVersion % "provided"
+  )
 )
 
 
@@ -63,7 +65,8 @@ lazy val data = (crossProject in file("data"))
     .settings(
       name := "b3.data",
       libraryDependencies ++= Seq(
-        "org.scala-lang.modules" %% "scala-async" % "0.9.6"
+        "org.scala-lang.modules" %% "scala-async" % "0.9.6",
+        "org.scalatest" %% "scalatest" % "3.0.0" % "test"
       )
     )
 

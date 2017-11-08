@@ -18,6 +18,7 @@ final case class Event(
       var __size = 0
       if (version != 0) { __size += _root_.com.google.protobuf.CodedOutputStream.computeUInt32Size(2, version) }
       if (inner.addNote.isDefined) { __size += 1 + _root_.com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag(inner.addNote.get.serializedSize) + inner.addNote.get.serializedSize }
+      if (inner.putProduct.isDefined) { __size += 1 + _root_.com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag(inner.putProduct.get.serializedSize) + inner.putProduct.get.serializedSize }
       __size
     }
     final override def serializedSize: Int = {
@@ -40,6 +41,11 @@ final case class Event(
         _output__.writeUInt32NoTag(__v.serializedSize)
         __v.writeTo(_output__)
       };
+      inner.putProduct.foreach { __v =>
+        _output__.writeTag(8, 2)
+        _output__.writeUInt32NoTag(__v.serializedSize)
+        __v.writeTo(_output__)
+      };
     }
     def mergeFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): com.woodpigeon.b3.schema.v100.Event = {
       var __version = this.version
@@ -53,6 +59,8 @@ final case class Event(
             __version = _input__.readUInt32()
           case 58 =>
             __inner = com.woodpigeon.b3.schema.v100.Event.Inner.AddNote(_root_.com.trueaccord.scalapb.LiteParser.readMessage(_input__, inner.addNote.getOrElse(com.woodpigeon.b3.schema.v100.AddNote.defaultInstance)))
+          case 66 =>
+            __inner = com.woodpigeon.b3.schema.v100.Event.Inner.PutProduct(_root_.com.trueaccord.scalapb.LiteParser.readMessage(_input__, inner.putProduct.getOrElse(com.woodpigeon.b3.schema.v100.PutProduct.defaultInstance)))
           case tag => _input__.skipField(tag)
         }
       }
@@ -64,6 +72,8 @@ final case class Event(
     def withVersion(__v: Int): Event = copy(version = __v)
     def getAddNote: com.woodpigeon.b3.schema.v100.AddNote = inner.addNote.getOrElse(com.woodpigeon.b3.schema.v100.AddNote.defaultInstance)
     def withAddNote(__v: com.woodpigeon.b3.schema.v100.AddNote): Event = copy(inner = com.woodpigeon.b3.schema.v100.Event.Inner.AddNote(__v))
+    def getPutProduct: com.woodpigeon.b3.schema.v100.PutProduct = inner.putProduct.getOrElse(com.woodpigeon.b3.schema.v100.PutProduct.defaultInstance)
+    def withPutProduct(__v: com.woodpigeon.b3.schema.v100.PutProduct): Event = copy(inner = com.woodpigeon.b3.schema.v100.Event.Inner.PutProduct(__v))
     def clearInner: Event = copy(inner = com.woodpigeon.b3.schema.v100.Event.Inner.Empty)
     def withInner(__v: com.woodpigeon.b3.schema.v100.Event.Inner): Event = copy(inner = __v)
     def getFieldByNumber(__fieldNumber: Int): scala.Any = {
@@ -73,6 +83,7 @@ final case class Event(
           if (__t != 0) __t else null
         }
         case 7 => inner.addNote.orNull
+        case 8 => inner.putProduct.orNull
       }
     }
     def getField(__field: _root_.scalapb.descriptors.FieldDescriptor): _root_.scalapb.descriptors.PValue = {
@@ -80,6 +91,7 @@ final case class Event(
       (__field.number: @_root_.scala.unchecked) match {
         case 2 => _root_.scalapb.descriptors.PInt(version)
         case 7 => inner.addNote.map(_.toPMessage).getOrElse(_root_.scalapb.descriptors.PEmpty)
+        case 8 => inner.putProduct.map(_.toPMessage).getOrElse(_root_.scalapb.descriptors.PEmpty)
       }
     }
     override def toString: String = _root_.com.trueaccord.scalapb.TextFormat.printToUnicodeString(this)
@@ -94,6 +106,7 @@ object Event extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpi
     com.woodpigeon.b3.schema.v100.Event(
       __fieldsMap.getOrElse(__fields.get(0), 0).asInstanceOf[Int],
       inner = __fieldsMap.get(__fields.get(1)).asInstanceOf[scala.Option[com.woodpigeon.b3.schema.v100.AddNote]].map(com.woodpigeon.b3.schema.v100.Event.Inner.AddNote)
+    .orElse[com.woodpigeon.b3.schema.v100.Event.Inner](__fieldsMap.get(__fields.get(2)).asInstanceOf[scala.Option[com.woodpigeon.b3.schema.v100.PutProduct]].map(com.woodpigeon.b3.schema.v100.Event.Inner.PutProduct))
     .getOrElse(com.woodpigeon.b3.schema.v100.Event.Inner.Empty)
     )
   }
@@ -103,6 +116,7 @@ object Event extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpi
       com.woodpigeon.b3.schema.v100.Event(
         __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[Int]).getOrElse(0),
         inner = __fieldsMap.get(scalaDescriptor.findFieldByNumber(7).get).flatMap(_.as[scala.Option[com.woodpigeon.b3.schema.v100.AddNote]]).map(com.woodpigeon.b3.schema.v100.Event.Inner.AddNote)
+    .orElse[com.woodpigeon.b3.schema.v100.Event.Inner](__fieldsMap.get(scalaDescriptor.findFieldByNumber(8).get).flatMap(_.as[scala.Option[com.woodpigeon.b3.schema.v100.PutProduct]]).map(com.woodpigeon.b3.schema.v100.Event.Inner.PutProduct))
     .getOrElse(com.woodpigeon.b3.schema.v100.Event.Inner.Empty)
       )
     case _ => throw new RuntimeException("Expected PMessage")
@@ -113,6 +127,7 @@ object Event extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpi
     var __out: _root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_] = null
     (__number: @_root_.scala.unchecked) match {
       case 7 => __out = com.woodpigeon.b3.schema.v100.AddNote
+      case 8 => __out = com.woodpigeon.b3.schema.v100.PutProduct
     }
     __out
   }
@@ -124,7 +139,9 @@ object Event extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpi
     def isEmpty: Boolean = false
     def isDefined: Boolean = true
     def isAddNote: Boolean = false
+    def isPutProduct: Boolean = false
     def addNote: scala.Option[com.woodpigeon.b3.schema.v100.AddNote] = None
+    def putProduct: scala.Option[com.woodpigeon.b3.schema.v100.PutProduct] = None
   }
   object Inner extends {
     @SerialVersionUID(0L)
@@ -141,12 +158,20 @@ object Event extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpi
       override def addNote: scala.Option[com.woodpigeon.b3.schema.v100.AddNote] = Some(value)
       override def number: Int = 7
     }
+    @SerialVersionUID(0L)
+    case class PutProduct(value: com.woodpigeon.b3.schema.v100.PutProduct) extends com.woodpigeon.b3.schema.v100.Event.Inner {
+      override def isPutProduct: Boolean = true
+      override def putProduct: scala.Option[com.woodpigeon.b3.schema.v100.PutProduct] = Some(value)
+      override def number: Int = 8
+    }
   }
   implicit class EventLens[UpperPB](_l: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.Event]) extends _root_.com.trueaccord.lenses.ObjectLens[UpperPB, com.woodpigeon.b3.schema.v100.Event](_l) {
     def version: _root_.com.trueaccord.lenses.Lens[UpperPB, Int] = field(_.version)((c_, f_) => c_.copy(version = f_))
     def addNote: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.AddNote] = field(_.getAddNote)((c_, f_) => c_.copy(inner = com.woodpigeon.b3.schema.v100.Event.Inner.AddNote(f_)))
+    def putProduct: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.PutProduct] = field(_.getPutProduct)((c_, f_) => c_.copy(inner = com.woodpigeon.b3.schema.v100.Event.Inner.PutProduct(f_)))
     def inner: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.Event.Inner] = field(_.inner)((c_, f_) => c_.copy(inner = f_))
   }
   final val VERSION_FIELD_NUMBER = 2
   final val ADDNOTE_FIELD_NUMBER = 7
+  final val PUTPRODUCT_FIELD_NUMBER = 8
 }
