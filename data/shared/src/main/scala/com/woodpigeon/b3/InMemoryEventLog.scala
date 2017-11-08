@@ -6,15 +6,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class InMemoryEventLog extends EventLog {
 
-  var streams = Map[String, Seq[Event]]()
-
-  println("CREATION!")
+  private var streams = Map[String, Seq[Event]]()
 
   override def read(offsetMap: OffsetMap) : Future[Payload] = Future {
-    println("InMemoryEventLog.read", offsetMap)
-
-    println("InMemoryEventLog.streams", streams)
-
     val lists = offsetMap.offsets
                 .map { case (ref, _) => EventList(ref, streams(ref)) }
 
@@ -22,14 +16,10 @@ class InMemoryEventLog extends EventLog {
   }
 
   override def write(payload: Payload) : Future[Unit] = Future {
-    println("InMemoryEventLog.write", payload)
-
     payload.eventLists.foreach {
       case EventList(ref, events) => {
         streams = streams + (ref -> events)
       }
     }
-
-    println("InMemoryEventLog.streams", streams)
   }
 }

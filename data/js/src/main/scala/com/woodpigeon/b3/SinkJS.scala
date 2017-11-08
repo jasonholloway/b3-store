@@ -10,12 +10,13 @@ import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.Promise
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.async.Async.{async, await}
+import scala.scalajs.js
 
 @JSExportTopLevel("Sink")
 @JSExportAll
 class SinkJS(log: EventLog) {
 
-  val inner = new Sink(new InMemoryEventLog())
+  val inner = new Sink(log)
 
   def commit(data: Int8Array): Promise[Unit] =
     inner.commit(Payload.parseFrom(data.toArray)).toJSPromise

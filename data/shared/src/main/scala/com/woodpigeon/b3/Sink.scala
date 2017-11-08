@@ -1,7 +1,5 @@
 package com.woodpigeon.b3
 
-import java.io.InputStream
-
 import com.woodpigeon.b3.schema.v100.Payload
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -10,7 +8,6 @@ import scala.concurrent.Future
 class Sink(log: EventLog) {
 
   def commit(payload: Payload): Future[Unit] = Future {
-    println("Sink.commit", payload)
     log.write(payload)
   }
 

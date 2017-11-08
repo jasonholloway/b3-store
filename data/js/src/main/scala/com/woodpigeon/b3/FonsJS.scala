@@ -6,12 +6,13 @@ import scala.scalajs.js.Promise
 import scala.scalajs.js.typedarray._
 import scala.scalajs.js.JSConverters._
 import scala.async.Async.{async, await}
+import scala.scalajs.js
 
 @JSExportTopLevel("Fons")
 @JSExportAll
 class FonsJS(log: EventLog) {
 
-  val inner = new Fons(new InMemoryEventLog())
+  val inner = new Fons(log)
 
   def view(streamRef: String, aggrType: String) : Promise[Int8Array] = async {
     val message = await { inner.view(streamRef, aggrType) }

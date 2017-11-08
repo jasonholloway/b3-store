@@ -12,6 +12,7 @@ val jsSettings = Seq(
   target := target.value / "js",
   scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
   skip in packageJSDependencies := false,
+  scalacOptions += "-P:scalajs:sjsDefinedByDefault",
   packageNpm := {
     val npmDir = target.value / "npm"
     val resourceDir = (resources in Compile).value.head
