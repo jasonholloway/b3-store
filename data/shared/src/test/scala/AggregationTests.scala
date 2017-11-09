@@ -17,12 +17,12 @@ class AggregationTests extends AsyncFreeSpec {
       val log = new InMemoryEventLog()
       val sink = new Sink(log)
 
-      sink.commit("1234", Seq(
+
+      log.write("1234", Seq(
         AddNote("Hello").asEvent(0),
         AddNote("there").asEvent(1),
         AddNote("Jason!").asEvent(2)
       ))
-      //should inject these into log, to served from Fons
 
       "should collect all those events" in async {
         val fons = new Fons(log)
