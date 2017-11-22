@@ -8,6 +8,9 @@ val commonSettings = Seq(
 lazy val packageNpm = taskKey[File]("pack into NPM package")
 
 
+lazy val b3 = project in file(".")
+
+
 val jsSettings = Seq(
   target := target.value / "js",
   scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
@@ -34,13 +37,10 @@ val jsSettings = Seq(
 
 val jvmSettings = Seq(
   libraryDependencies ++= Seq(
-    "org.scala-js" %% "scalajs-stubs" % scalaJSVersion % "provided"
+    "org.scala-js" %% "scalajs-stubs" % scalaJSVersion % "provided",
   )
 )
 
-
-lazy val root = (project in file("."))
-//    .aggregate(`data-jvm`, `data-js`, `lambda-runner`)
 
 
 lazy val schema = (crossProject in file("schema"))
@@ -64,11 +64,12 @@ lazy val schemaJS = schema.js
 lazy val data = (crossProject in file("data"))
     .settings(
       name := "b3.data",
-      libraryDependencies ++= Seq(
-        "org.scala-lang.modules" %% "scala-async" % "0.9.6",
-        "org.scalatest" %% "scalatest" % "3.0.0" % "test"
-      )
+      libraryDependencies ++= dataDependencies
     )
+
+val dataDependencies = Seq(
+  "org.scala-lang.modules" %% "scala-async" % "0.9.6"
+)
 
 lazy val dataJVM = data.jvm
     .settings(jvmSettings)
@@ -85,16 +86,29 @@ lazy val dataJS = data.js
     .enablePlugins(ScalaJSPlugin)
 
 
-//lazy val store = (project in file("store"))
-//  .settings(commonSettings ++ Seq(
-//    name:="b3.store",
-//    libraryDependencies ++= Seq(
-//      "com.amazonaws" % "aws-lambda-java-core" % "1.1.0",
-//      "commons-io" % "commons-io" % "2.5",
-//      "org.scalactic" %% "scalactic" % "3.0.1",
-//      "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-//      "com.ironcorelabs" %% "cats-scalatest" % "2.2.0" % "test",
-//    )
+lazy val dataShared = (project in file("data/shared"))
+  .settings(jvmSettings,
+    libraryDependencies ++= dataDependencies
+  )
+  .dependsOn(schema.jvm)
+
+
+
+
+
+lazy val store = (project in file("store"))
+  .settings(commonSettings ++ Seq(
+    name:="b3.store",
+    libraryDependencies ++= Seq(
+      "com.amazonaws" % "aws-lambda-java-core" % "1.1.0",
+      "commons-io" % "commons-io" % "2.5",
+      "org.scalactic" %% "scalactic" % "3.0.1",
+      "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+      "com.ironcorelabs" %% "cats-scalatest" % "2.2.0" % "test",
+    )))
+  .dependsOn(schemaJVM)
+
+
 //    releaseProcess := Seq[ReleaseStep](
 //      checkSnapshotDependencies,
 //      inquireVersions,
@@ -108,8 +122,6 @@ lazy val dataJS = data.js
 //      commitNextVersion,
 //      pushChanges
 //    )
-//  ))
-//  .dependsOn(schema)
 //  .enablePlugins(PublishLambdaPlugin)
 
 lazy val `lambda-runner` = (project in file("lambda-runner"))
@@ -120,7 +132,7 @@ lazy val `lambda-runner` = (project in file("lambda-runner"))
       "com.amazonaws" % "aws-lambda-java-core" % "1.1.0",
     )
   ))
-  .dependsOn(dataJVM)
+  .dependsOn(dataJVM, store)
 
 
 lazy val packForAws = taskKey[Unit]("packages everything into one neat lambda JAR")
