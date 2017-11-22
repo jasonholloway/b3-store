@@ -10,9 +10,7 @@ import scala.async.Async.{async, await}
 class Fons(log: EventLog) {
 
   def view(streamRef: String, aggrType: String) : Future[GeneratedMessage] = async {
-    val payload = await {
-      log.read(OffsetMap(offsets = Map(streamRef -> 0)))
-    }
+    val payload = await { log.read(OffsetMap(offsets = Map(streamRef -> 0))) }
 
     val events = payload.eventLists.head.events
 

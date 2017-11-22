@@ -1,8 +1,17 @@
 package com.woodpigeon.b3
 
+import com.trueaccord.scalapb.GeneratedMessage
 import com.woodpigeon.b3.schema.v100.{AddNote, Event, PutProduct}
 
+import scalapb.descriptors.ScalaType.Message
+
 object Updates {
+
+  implicit class Update(msg: GeneratedMessage) {
+
+  }
+
+
 
   trait EventAdaptor[M] {
     def createEvent(message: M, version: Int) : Event
@@ -11,7 +20,6 @@ object Updates {
   object EventAdaptor {
     def apply[M](create: (M, Int) => Event) : EventAdaptor[M] =
       (message: M, version: Int) => create(message, version)
-
   }
 
 

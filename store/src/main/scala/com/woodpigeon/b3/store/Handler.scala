@@ -6,7 +6,7 @@ import com.amazonaws.services.lambda.runtime.Context
 
 import com.woodpigeon.b3.schema.v100
 //import com.woodpigeon.b3.schema.v100.Command.UpdateType
-//import com.woodpigeon.b3.schema.v100.{Command, Result}
+import com.woodpigeon.b3.schema.v100.{Command, Result}
 
 class Handler {
 

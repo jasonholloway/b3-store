@@ -1,6 +1,7 @@
 import java.io.{BufferedReader, ByteArrayInputStream, ByteArrayOutputStream, InputStreamReader}
 
 import com.amazonaws.services.lambda.runtime.Context
+import com.woodpigeon.b3.store.Handler
 
 object Main extends App {
   val streamReader = new InputStreamReader(System.in)

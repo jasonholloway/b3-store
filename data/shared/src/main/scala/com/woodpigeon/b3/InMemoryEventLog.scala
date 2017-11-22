@@ -1,51 +1,52 @@
 package com.woodpigeon.b3
 
-import com.trueaccord.scalapb.GeneratedMessage
-import com.woodpigeon.b3.schema.v100.{Event, EventList, OffsetMap, Payload}
-
+import com.woodpigeon.b3.schema.v100._
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class InMemoryEventLog extends EventLog {
 
   private type Key = String
-  private type Update = Any
-  private type Stream = (Int, List[Update])
+  private type Stream = (Int, List[Event])
 
 
   private var streams = Map[Key, Stream]()
 
-  override def read(offsetMap: OffsetMap) : Future[Payload] = Future {
+  override def read(offsetMap: OffsetMap) : Future[Payload] = {
+    println("GAHHH")
+
     val streamMap = offsetMap.offsets
                     .flatMap { case (ref, readOffset) =>
                       streams.get(ref) match {
                         case Some((_, updates)) =>
-                          val events = updates.drop(readOffset).map(_ => Event())
-                          Some(EventList(ref, events))
+                          println(updates)
+                          Some(EventList(ref, updates.drop(readOffset)))
                         case None => None
                       }
                     }
-
-    Payload(eventLists = streamMap.toSeq)
+    println("hello")
+    Future(Payload(eventLists = streamMap.toSeq))
   }
 
   override def write(payload: Payload) : Future[Unit] = Future {
     payload.eventLists.foreach {
       case EventList(ref, events) => {
-        append(ref, events.map(_.inner.value))
+        append(ref, events)
       }
     }
   }
 
 
-  def append(ref: String, update: Update): Unit = {
+  def append(ref: String, update: Event): Unit = {
     streams = streams.get(ref) match {
       case Some((head, evs)) => streams + (ref -> (head + 1, update :: evs))
       case None => streams + (ref -> (1, update :: Nil))
     }
   }
 
-  def append(ref: String, messages: Seq[Update]): Unit =
-    messages.foreach(append(ref, _: Update))
+  def append(ref: String, messages: Seq[Event]): Unit = {
+    println(messages)
+    messages.foreach(append(ref, _: Event))
+  }
 
 }

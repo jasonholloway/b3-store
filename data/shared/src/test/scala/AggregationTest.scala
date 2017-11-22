@@ -8,7 +8,7 @@ import Fons._
 import scala.async.Async.{async, await}
 import scala.language.implicitConversions
 
-class AggregationTests extends AsyncFreeSpec {
+class AggregationTest extends AsyncFreeSpec {
 
   "EventList" - {
 
@@ -17,26 +17,28 @@ class AggregationTests extends AsyncFreeSpec {
       val log = new InMemoryEventLog()
       val sink = new Sink(log)
 
-
-      log.write("1234", Seq(
+      log.append("1234", Seq(
         AddNote("Hello").asEvent(0),
         AddNote("there").asEvent(1),
         AddNote("Jason!").asEvent(2)
       ))
 
-      "should collect all those events" in async {
+      "should collect all those events" in {
         val fons = new Fons(log)
 
-        val aggr = await { fons.viewAs[EventList]("1234", "EventList") }
+        val p = 9
 
-        assert(aggr.events.length == 3)
+        fons.viewAs[EventList]("1234", "EventList")
+          .map(aggr => {
+            assert(aggr.events.length == 3)
 
-        val phrase = aggr.events.flatMap {
-                        case Event(_, Event.Inner.AddNote(AddNote(message))) => Seq(message)
-                        case _ => Nil
-                      }.mkString(" ")
+            val phrase = aggr.events.flatMap {
+              case Event(_, Event.Inner.AddNote(AddNote(message))) => Seq(message)
+              case _ => Nil
+            }.mkString(" ")
 
-        assert(phrase == "Hello there Jason!")
+            assert(phrase == "Hello there Jason!")
+          })
       }
 
 
