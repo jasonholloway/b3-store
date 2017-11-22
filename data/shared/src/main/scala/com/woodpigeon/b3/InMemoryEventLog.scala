@@ -9,23 +9,19 @@ class InMemoryEventLog extends EventLog {
   private type Key = String
   private type Stream = (Int, List[Event])
 
-
   private var streams = Map[Key, Stream]()
 
-  override def read(offsetMap: OffsetMap) : Future[Payload] = {
-    println("GAHHH")
+  override def read(offsetMap: OffsetMap) : Future[Payload] = Future {
+    val streamMap
+          = offsetMap.offsets.flatMap {
+              case (ref, readOffset) => streams.get(ref) map {
+                  case (_, updates) => (ref, updates.reverseIterator.drop(readOffset))
+              }
+            }
 
-    val streamMap = offsetMap.offsets
-                    .flatMap { case (ref, readOffset) =>
-                      streams.get(ref) match {
-                        case Some((_, updates)) =>
-                          println(updates)
-                          Some(EventList(ref, updates.drop(readOffset)))
-                        case None => None
-                      }
-                    }
-    println("hello")
-    Future(Payload(eventLists = streamMap.toSeq))
+    val eventLists = streamMap map { case (ref, events) => EventList(ref, events.toSeq) }
+
+    Payload(eventLists.toSeq)
   }
 
   override def write(payload: Payload) : Future[Unit] = Future {

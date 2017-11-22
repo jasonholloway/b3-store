@@ -26,15 +26,13 @@ class AggregationTest extends AsyncFreeSpec {
       "should collect all those events" in {
         val fons = new Fons(log)
 
-        val p = 9
-
         fons.viewAs[EventList]("1234", "EventList")
           .map(aggr => {
             assert(aggr.events.length == 3)
 
             val phrase = aggr.events.flatMap {
-              case Event(_, Event.Inner.AddNote(AddNote(message))) => Seq(message)
-              case _ => Nil
+              case Event(_, Event.Inner.AddNote(AddNote(message))) => Some(message)
+              case _ => None
             }.mkString(" ")
 
             assert(phrase == "Hello there Jason!")
