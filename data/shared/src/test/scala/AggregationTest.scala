@@ -1,12 +1,15 @@
-import com.woodpigeon.b3.{Fons, InMemoryEventLog, Sink}
-import com.woodpigeon.b3.schema.v100._
+import com.woodpigeon.b3.{EventLog, Fons, InMemoryEventLog, Sink}
+import com.woodpigeon.b3.schema.v100.{Event, _}
 import com.woodpigeon.b3.Sink._
-import org.scalatest.{AsyncFreeSpec}
+import org.scalatest.{Assertion, AsyncFreeSpec, FutureOutcome, fixture}
 import com.woodpigeon.b3.Updates._
 import Fons._
+import org.scalatest.prop.Checkers
 
 import scala.async.Async.{async, await}
+import scala.concurrent.Future
 import scala.language.implicitConversions
+
 
 class AggregationTest extends AsyncFreeSpec {
 
@@ -38,7 +41,6 @@ class AggregationTest extends AsyncFreeSpec {
             assert(phrase == "Hello there Jason!")
           })
       }
-
 
     }
   }
