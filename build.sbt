@@ -2,13 +2,15 @@ import sbt.Keys.mainClass
 
 val commonSettings = Seq(
   organization := "com.woodpigeon",
-  scalaVersion := "2.12.2"
+  scalaVersion := "2.12.2",
+  scalacOptions += "-Ypartial-unification"
 )
 
 lazy val packageNpm = taskKey[File]("pack into NPM package")
 
 
-lazy val b3 = project in file(".")
+lazy val b3 = (project in file("."))
+  .aggregate(schemaJVM, schemaJS, dataJVM, dataJS)
 
 
 val jsSettings = Seq(
@@ -70,7 +72,9 @@ lazy val data = (crossProject in file("data"))
     )
 
 val dataDependencies = Seq(
-  "org.scala-lang.modules" %% "scala-async" % "0.9.6"
+  "org.scala-lang.modules" %% "scala-async" % "0.9.6",
+  "org.typelevel" %% "cats-core" % "1.0.0-RC1",
+  "org.typelevel" %% "alleycats-core" % "1.0.0-RC1"
 )
 
 lazy val dataJVM = data.jvm

@@ -1,38 +1,33 @@
 package com.woodpigeon.b3
 
-import com.trueaccord.scalapb.GeneratedMessage
 import com.woodpigeon.b3.schema.v100.{AddNote, Event, PutProduct}
+import scala.language.implicitConversions
+import scala.util.{Failure, Success, Try}
 
-import scalapb.descriptors.ScalaType.Message
 
-object Updates {
+trait Update {
+  def asEvent(v: Int): Event
+}
 
-  implicit class Update(msg: GeneratedMessage) {
 
+object Update {
+
+  implicit def convert(ev: AddNote) : Update
+    = (v: Int) => Event(v).withAddNote(ev)
+
+  implicit def convert(ev: PutProduct) : Update
+    = (v: Int) => Event(v).withPutProduct(ev)
+
+
+  implicit class RichEvent(ev: Event)
+  {
+    def asUpdate: Try[Update] = ev match {
+      case Event(_, Event.Inner.AddNote(addNote)) => Success(addNote)
+      case Event(_, Event.Inner.PutProduct(putProduct)) => Success(putProduct)
+      case _ => Failure(new MatchError())
+    }
   }
 
-
-
-  trait EventAdaptor[M] {
-    def createEvent(message: M, version: Int) : Event
-  }
-
-  object EventAdaptor {
-    def apply[M](create: (M, Int) => Event) : EventAdaptor[M] =
-      (message: M, version: Int) => create(message, version)
-  }
-
-
-  implicit val addNoteAdaptor : EventAdaptor[AddNote] =
-    EventAdaptor[AddNote]((m, v) => Event(version = v, inner = Event.Inner.AddNote(m)))
-
-  implicit val putProductAdaptor : EventAdaptor[PutProduct] =
-    EventAdaptor[PutProduct]((m, v) => Event(version = v, inner = Event.Inner.PutProduct(m)))
-
-
-  implicit class UpdateEnricher[M](message: M)(implicit adaptor: EventAdaptor[M]) {
-    def asEvent(version: Int) = adaptor.createEvent(message, version)
-  }
 }
 
 
