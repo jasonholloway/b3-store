@@ -1,10 +1,12 @@
-import com.woodpigeon.b3.{EventLog, InMemoryEventLog}
+import com.woodpigeon.b3.{EventLog, InMemoryEventLog, Update}
 import com.woodpigeon.b3.Update._
-import com.woodpigeon.b3.schema.v100.{Event, _}
-import org.scalatest.{AsyncFreeSpec}
+import com.woodpigeon.b3.schema.v100._
+import org.scalatest.AsyncFreeSpec
+import cats.implicits._
 
 import scala.async.Async.{async, await}
 import scala.language.implicitConversions
+import scala.util.Success
 
 
 class EventLogTests extends AsyncFreeSpec {
@@ -15,15 +17,13 @@ class EventLogTests extends AsyncFreeSpec {
       "should allow writes" in async {
         val log = newLog()
 
-        val eventLists = Seq(
-          EventList("TEST:123", Seq(
-            AddNote("Hello").asEvent(0),
-            AddNote("there").asEvent(1),
-            AddNote("Jason!").asEvent(2)
+        val fragments = Seq(
+          StreamFragment("TEST:123", Seq[Update](
+            AddNote("Hello"), AddNote("there"), AddNote("Jason!")
           ))
         )
 
-        await { log.write(Payload(eventLists)) }
+        await { log.write(StreamFragmentBatch(fragments)) }
 
         assert(true)
       }
@@ -31,59 +31,60 @@ class EventLogTests extends AsyncFreeSpec {
       "roundtrips happily" in async {
         val log = newLog()
 
-        val payload = Payload(Seq(
-          EventList("TEST:123", Seq(
-            AddNote("Hello").asEvent(0),
-            AddNote("there").asEvent(1),
-            AddNote("Jason!").asEvent(2),
+        val batch = StreamFragmentBatch(Seq(
+          StreamFragment("TEST:123", Seq[Update](
+            AddNote("Hello"), AddNote("there"), AddNote("Jason!")
           ))
         ))
 
-        await { log.write(payload) }
+        await { log.write(batch) }
 
-        val offsetMap = OffsetMap(Map("TEST:123" -> 0))
+        val offsetMap = StreamOffsetMap(Map("TEST:123" -> 0))
 
         val returned = await { log.read(offsetMap) }
 
-        val phrase = returned.eventLists.head.events.flatMap {
-          case Event(_, Event.Inner.AddNote(AddNote(message))) => Some(message)
-          case _ => None
-        }.mkString(" ")
+        val phrase = returned.fragments.head.events
+            .map { _.inner }
+            .flatMap {
+              case Event.Inner.AddNote(AddNote(message)) => Some(message)
+              case _ => None
+            }.mkString(" ")
 
         assert(phrase == "Hello there Jason!")
 
-        assert(returned.eventLists.head.ref == "TEST:123")
+        assert(returned.fragments.head.ref == "TEST:123")
       }
 
 
       "successive commits are concatenated" in async {
         val log = newLog()
 
-        val payload1 = Payload(Seq(
-          EventList("TEST:123", Seq(
-            AddNote("Hello").asEvent(0),
+        val batch1 = StreamFragmentBatch(Seq(
+          StreamFragment("TEST:123", Seq[Update](
+            AddNote("Hello")
           ))
         ))
 
-        await { log.write(payload1) }
+        await { log.write(batch1) }
 
-        val payload2 = Payload(Seq(
-          EventList("TEST:123", Seq(
-            AddNote("there").asEvent(1),
-            AddNote("Jason!").asEvent(2)
+        val batch2 = StreamFragmentBatch(Seq(
+          StreamFragment("TEST:123", Seq[Update](
+            AddNote("there"), AddNote("Jason!")
           ))
         ))
 
-        await { log.write(payload2) }
+        await { log.write(batch2) }
 
-        val offsetMap = OffsetMap(Map("TEST:123" -> 0))
+        val offsetMap = StreamOffsetMap(Map("TEST:123" -> 0))
 
         val returned = await { log.read(offsetMap) }
 
-        val phrase = returned.eventLists.head.events.flatMap {
-          case Event(_, Event.Inner.AddNote(AddNote(message))) => Some(message)
-          case _ => None
-        }.mkString(" ")
+        val phrase = returned.fragments.flattenUpdates
+                      .flatMap {
+                        case Update(AddNote(message))
+                          => Some(message)
+                        case _ => None
+                      }.mkString(" ")
 
         assert(phrase == "Hello there Jason!")
       }
@@ -92,4 +93,13 @@ class EventLogTests extends AsyncFreeSpec {
   }
 
   test("InMemoryEventLog", () => new InMemoryEventLog())
+
+
+  implicit class EnrichedFragments(fragments: Seq[StreamFragment]) {
+    def flattenUpdates: Seq[Update]
+      = fragments.flatMap(_.events).toList.traverse(_.asUpdate).get
+
+  }
+
+
 }

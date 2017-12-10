@@ -9,14 +9,12 @@ package com.woodpigeon.b3.schema.v100
 
 @SerialVersionUID(0L)
 final case class Event(
-    version: Int = 0,
     inner: com.woodpigeon.b3.schema.v100.Event.Inner = com.woodpigeon.b3.schema.v100.Event.Inner.Empty
     ) extends com.trueaccord.scalapb.GeneratedMessage with com.trueaccord.scalapb.Message[Event] with com.trueaccord.lenses.Updatable[Event] {
     @transient
     private[this] var __serializedSizeCachedValue: Int = 0
     private[this] def __computeSerializedValue(): Int = {
       var __size = 0
-      if (version != 0) { __size += _root_.com.google.protobuf.CodedOutputStream.computeUInt32Size(2, version) }
       if (inner.addNote.isDefined) { __size += 1 + _root_.com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag(inner.addNote.get.serializedSize) + inner.addNote.get.serializedSize }
       if (inner.putProduct.isDefined) { __size += 1 + _root_.com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag(inner.putProduct.get.serializedSize) + inner.putProduct.get.serializedSize }
       __size
@@ -30,12 +28,6 @@ final case class Event(
       read
     }
     def writeTo(`_output__`: _root_.com.google.protobuf.CodedOutputStream): Unit = {
-      {
-        val __v = version
-        if (__v != 0) {
-          _output__.writeUInt32(2, __v)
-        }
-      };
       inner.addNote.foreach { __v =>
         _output__.writeTag(7, 2)
         _output__.writeUInt32NoTag(__v.serializedSize)
@@ -48,15 +40,12 @@ final case class Event(
       };
     }
     def mergeFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): com.woodpigeon.b3.schema.v100.Event = {
-      var __version = this.version
       var __inner = this.inner
       var _done__ = false
       while (!_done__) {
         val _tag__ = _input__.readTag()
         _tag__ match {
           case 0 => _done__ = true
-          case 16 =>
-            __version = _input__.readUInt32()
           case 58 =>
             __inner = com.woodpigeon.b3.schema.v100.Event.Inner.AddNote(_root_.com.trueaccord.scalapb.LiteParser.readMessage(_input__, inner.addNote.getOrElse(com.woodpigeon.b3.schema.v100.AddNote.defaultInstance)))
           case 66 =>
@@ -65,11 +54,9 @@ final case class Event(
         }
       }
       com.woodpigeon.b3.schema.v100.Event(
-          version = __version,
           inner = __inner
       )
     }
-    def withVersion(__v: Int): Event = copy(version = __v)
     def getAddNote: com.woodpigeon.b3.schema.v100.AddNote = inner.addNote.getOrElse(com.woodpigeon.b3.schema.v100.AddNote.defaultInstance)
     def withAddNote(__v: com.woodpigeon.b3.schema.v100.AddNote): Event = copy(inner = com.woodpigeon.b3.schema.v100.Event.Inner.AddNote(__v))
     def getPutProduct: com.woodpigeon.b3.schema.v100.PutProduct = inner.putProduct.getOrElse(com.woodpigeon.b3.schema.v100.PutProduct.defaultInstance)
@@ -78,10 +65,6 @@ final case class Event(
     def withInner(__v: com.woodpigeon.b3.schema.v100.Event.Inner): Event = copy(inner = __v)
     def getFieldByNumber(__fieldNumber: Int): scala.Any = {
       (__fieldNumber: @_root_.scala.unchecked) match {
-        case 2 => {
-          val __t = version
-          if (__t != 0) __t else null
-        }
         case 7 => inner.addNote.orNull
         case 8 => inner.putProduct.orNull
       }
@@ -89,7 +72,6 @@ final case class Event(
     def getField(__field: _root_.scalapb.descriptors.FieldDescriptor): _root_.scalapb.descriptors.PValue = {
       require(__field.containingMessage eq companion.scalaDescriptor)
       (__field.number: @_root_.scala.unchecked) match {
-        case 2 => _root_.scalapb.descriptors.PInt(version)
         case 7 => inner.addNote.map(_.toPMessage).getOrElse(_root_.scalapb.descriptors.PEmpty)
         case 8 => inner.putProduct.map(_.toPMessage).getOrElse(_root_.scalapb.descriptors.PEmpty)
       }
@@ -104,9 +86,8 @@ object Event extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpi
     require(__fieldsMap.keys.forall(_.getContainingType() == javaDescriptor), "FieldDescriptor does not match message type.")
     val __fields = javaDescriptor.getFields
     com.woodpigeon.b3.schema.v100.Event(
-      __fieldsMap.getOrElse(__fields.get(0), 0).asInstanceOf[Int],
-      inner = __fieldsMap.get(__fields.get(1)).asInstanceOf[scala.Option[com.woodpigeon.b3.schema.v100.AddNote]].map(com.woodpigeon.b3.schema.v100.Event.Inner.AddNote)
-    .orElse[com.woodpigeon.b3.schema.v100.Event.Inner](__fieldsMap.get(__fields.get(2)).asInstanceOf[scala.Option[com.woodpigeon.b3.schema.v100.PutProduct]].map(com.woodpigeon.b3.schema.v100.Event.Inner.PutProduct))
+      inner = __fieldsMap.get(__fields.get(0)).asInstanceOf[scala.Option[com.woodpigeon.b3.schema.v100.AddNote]].map(com.woodpigeon.b3.schema.v100.Event.Inner.AddNote)
+    .orElse[com.woodpigeon.b3.schema.v100.Event.Inner](__fieldsMap.get(__fields.get(1)).asInstanceOf[scala.Option[com.woodpigeon.b3.schema.v100.PutProduct]].map(com.woodpigeon.b3.schema.v100.Event.Inner.PutProduct))
     .getOrElse(com.woodpigeon.b3.schema.v100.Event.Inner.Empty)
     )
   }
@@ -114,15 +95,14 @@ object Event extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpi
     case _root_.scalapb.descriptors.PMessage(__fieldsMap) =>
       require(__fieldsMap.keys.forall(_.containingMessage == scalaDescriptor), "FieldDescriptor does not match message type.")
       com.woodpigeon.b3.schema.v100.Event(
-        __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[Int]).getOrElse(0),
         inner = __fieldsMap.get(scalaDescriptor.findFieldByNumber(7).get).flatMap(_.as[scala.Option[com.woodpigeon.b3.schema.v100.AddNote]]).map(com.woodpigeon.b3.schema.v100.Event.Inner.AddNote)
     .orElse[com.woodpigeon.b3.schema.v100.Event.Inner](__fieldsMap.get(scalaDescriptor.findFieldByNumber(8).get).flatMap(_.as[scala.Option[com.woodpigeon.b3.schema.v100.PutProduct]]).map(com.woodpigeon.b3.schema.v100.Event.Inner.PutProduct))
     .getOrElse(com.woodpigeon.b3.schema.v100.Event.Inner.Empty)
       )
     case _ => throw new RuntimeException("Expected PMessage")
   }
-  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = V100Proto.javaDescriptor.getMessageTypes.get(2)
-  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = V100Proto.scalaDescriptor.messages(2)
+  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = V100Proto.javaDescriptor.getMessageTypes.get(3)
+  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = V100Proto.scalaDescriptor.messages(3)
   def messageCompanionForFieldNumber(__number: Int): _root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_] = {
     var __out: _root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_] = null
     (__number: @_root_.scala.unchecked) match {
@@ -166,12 +146,10 @@ object Event extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpi
     }
   }
   implicit class EventLens[UpperPB](_l: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.Event]) extends _root_.com.trueaccord.lenses.ObjectLens[UpperPB, com.woodpigeon.b3.schema.v100.Event](_l) {
-    def version: _root_.com.trueaccord.lenses.Lens[UpperPB, Int] = field(_.version)((c_, f_) => c_.copy(version = f_))
     def addNote: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.AddNote] = field(_.getAddNote)((c_, f_) => c_.copy(inner = com.woodpigeon.b3.schema.v100.Event.Inner.AddNote(f_)))
     def putProduct: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.PutProduct] = field(_.getPutProduct)((c_, f_) => c_.copy(inner = com.woodpigeon.b3.schema.v100.Event.Inner.PutProduct(f_)))
     def inner: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.Event.Inner] = field(_.inner)((c_, f_) => c_.copy(inner = f_))
   }
-  final val VERSION_FIELD_NUMBER = 2
   final val ADDNOTE_FIELD_NUMBER = 7
   final val PUTPRODUCT_FIELD_NUMBER = 8
 }

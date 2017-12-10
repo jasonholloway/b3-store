@@ -8,10 +8,10 @@ package com.woodpigeon.b3.schema.v100
 
 
 @SerialVersionUID(0L)
-final case class EventList(
+final case class StreamFragment(
     ref: String = "",
     events: _root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.Event] = _root_.scala.collection.Seq.empty
-    ) extends com.trueaccord.scalapb.GeneratedMessage with com.trueaccord.scalapb.Message[EventList] with com.trueaccord.lenses.Updatable[EventList] {
+    ) extends com.trueaccord.scalapb.GeneratedMessage with com.trueaccord.scalapb.Message[StreamFragment] with com.trueaccord.lenses.Updatable[StreamFragment] {
     @transient
     private[this] var __serializedSizeCachedValue: Int = 0
     private[this] def __computeSerializedValue(): Int = {
@@ -41,7 +41,7 @@ final case class EventList(
         __v.writeTo(_output__)
       };
     }
-    def mergeFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): com.woodpigeon.b3.schema.v100.EventList = {
+    def mergeFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): com.woodpigeon.b3.schema.v100.StreamFragment = {
       var __ref = this.ref
       val __events = (_root_.scala.collection.immutable.Vector.newBuilder[com.woodpigeon.b3.schema.v100.Event] ++= this.events)
       var _done__ = false
@@ -56,16 +56,16 @@ final case class EventList(
           case tag => _input__.skipField(tag)
         }
       }
-      com.woodpigeon.b3.schema.v100.EventList(
+      com.woodpigeon.b3.schema.v100.StreamFragment(
           ref = __ref,
           events = __events.result()
       )
     }
-    def withRef(__v: String): EventList = copy(ref = __v)
+    def withRef(__v: String): StreamFragment = copy(ref = __v)
     def clearEvents = copy(events = _root_.scala.collection.Seq.empty)
-    def addEvents(__vs: com.woodpigeon.b3.schema.v100.Event*): EventList = addAllEvents(__vs)
-    def addAllEvents(__vs: TraversableOnce[com.woodpigeon.b3.schema.v100.Event]): EventList = copy(events = events ++ __vs)
-    def withEvents(__v: _root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.Event]): EventList = copy(events = __v)
+    def addEvents(__vs: com.woodpigeon.b3.schema.v100.Event*): StreamFragment = addAllEvents(__vs)
+    def addAllEvents(__vs: TraversableOnce[com.woodpigeon.b3.schema.v100.Event]): StreamFragment = copy(events = events ++ __vs)
+    def withEvents(__v: _root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.Event]): StreamFragment = copy(events = __v)
     def getFieldByNumber(__fieldNumber: Int): scala.Any = {
       (__fieldNumber: @_root_.scala.unchecked) match {
         case 1 => {
@@ -83,30 +83,30 @@ final case class EventList(
       }
     }
     override def toString: String = _root_.com.trueaccord.scalapb.TextFormat.printToUnicodeString(this)
-    def companion = com.woodpigeon.b3.schema.v100.EventList
+    def companion = com.woodpigeon.b3.schema.v100.StreamFragment
 }
 
-object EventList extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpigeon.b3.schema.v100.EventList] {
-  implicit def messageCompanion: com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpigeon.b3.schema.v100.EventList] = this
-  def fromFieldsMap(__fieldsMap: scala.collection.immutable.Map[_root_.com.google.protobuf.Descriptors.FieldDescriptor, scala.Any]): com.woodpigeon.b3.schema.v100.EventList = {
+object StreamFragment extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpigeon.b3.schema.v100.StreamFragment] {
+  implicit def messageCompanion: com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpigeon.b3.schema.v100.StreamFragment] = this
+  def fromFieldsMap(__fieldsMap: scala.collection.immutable.Map[_root_.com.google.protobuf.Descriptors.FieldDescriptor, scala.Any]): com.woodpigeon.b3.schema.v100.StreamFragment = {
     require(__fieldsMap.keys.forall(_.getContainingType() == javaDescriptor), "FieldDescriptor does not match message type.")
     val __fields = javaDescriptor.getFields
-    com.woodpigeon.b3.schema.v100.EventList(
+    com.woodpigeon.b3.schema.v100.StreamFragment(
       __fieldsMap.getOrElse(__fields.get(0), "").asInstanceOf[String],
       __fieldsMap.getOrElse(__fields.get(1), Nil).asInstanceOf[_root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.Event]]
     )
   }
-  implicit def messageReads: _root_.scalapb.descriptors.Reads[com.woodpigeon.b3.schema.v100.EventList] = _root_.scalapb.descriptors.Reads{
+  implicit def messageReads: _root_.scalapb.descriptors.Reads[com.woodpigeon.b3.schema.v100.StreamFragment] = _root_.scalapb.descriptors.Reads{
     case _root_.scalapb.descriptors.PMessage(__fieldsMap) =>
       require(__fieldsMap.keys.forall(_.containingMessage == scalaDescriptor), "FieldDescriptor does not match message type.")
-      com.woodpigeon.b3.schema.v100.EventList(
+      com.woodpigeon.b3.schema.v100.StreamFragment(
         __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[String]).getOrElse(""),
         __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[_root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.Event]]).getOrElse(_root_.scala.collection.Seq.empty)
       )
     case _ => throw new RuntimeException("Expected PMessage")
   }
-  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = V100Proto.javaDescriptor.getMessageTypes.get(3)
-  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = V100Proto.scalaDescriptor.messages(3)
+  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = V100Proto.javaDescriptor.getMessageTypes.get(0)
+  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = V100Proto.scalaDescriptor.messages(0)
   def messageCompanionForFieldNumber(__number: Int): _root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_] = {
     var __out: _root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_] = null
     (__number: @_root_.scala.unchecked) match {
@@ -116,9 +116,9 @@ object EventList extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.wo
   }
   lazy val nestedMessagesCompanions: Seq[_root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_]] = Seq.empty
   def enumCompanionForFieldNumber(__fieldNumber: Int): _root_.com.trueaccord.scalapb.GeneratedEnumCompanion[_] = throw new MatchError(__fieldNumber)
-  lazy val defaultInstance = com.woodpigeon.b3.schema.v100.EventList(
+  lazy val defaultInstance = com.woodpigeon.b3.schema.v100.StreamFragment(
   )
-  implicit class EventListLens[UpperPB](_l: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.EventList]) extends _root_.com.trueaccord.lenses.ObjectLens[UpperPB, com.woodpigeon.b3.schema.v100.EventList](_l) {
+  implicit class StreamFragmentLens[UpperPB](_l: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.StreamFragment]) extends _root_.com.trueaccord.lenses.ObjectLens[UpperPB, com.woodpigeon.b3.schema.v100.StreamFragment](_l) {
     def ref: _root_.com.trueaccord.lenses.Lens[UpperPB, String] = field(_.ref)((c_, f_) => c_.copy(ref = f_))
     def events: _root_.com.trueaccord.lenses.Lens[UpperPB, _root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.Event]] = field(_.events)((c_, f_) => c_.copy(events = f_))
   }

@@ -15,28 +15,27 @@ class InMemoryEventLog extends EventLog {
 
   private var store = mutable.Map[Key, Stream]()
 
-  override def read(offsetMap: OffsetMap) : Future[Payload] = Future {
+  override def read(offsetMap: StreamOffsetMap) : Future[StreamFragmentBatch] = Future {
     val streams = offsetMap.offsets.flatMap {
                     case (ref, readOffset) => store.get(ref) map {
                         case (_, updates) => (ref, updates.reverseIterator.drop(readOffset))
                     }
                   }
 
-    val eventLists = streams map {
-      case (ref, updates) => EventList(ref, updates.map(_.asEvent(0)).toSeq)
+    val fragments = streams map {
+      case (ref, updates) => StreamFragment(ref, updates.toSeq)
     }
 
-    Payload(eventLists.toSeq)
+    StreamFragmentBatch(fragments.toSeq)
   }
 
-  override def write(payload: Payload) : Future[Unit] = Future {
-    payload.eventLists.foreach {
-      case EventList(ref, events) => {
+  override def write(batch: StreamFragmentBatch) : Future[Unit] = Future {
+    batch.fragments.foreach {
+      case StreamFragment(ref, events) =>
         events.toList.traverse(_.asUpdate) match {
-          case Success(updates) => stream(ref).append(updates:_*)
+          case Success(updates) => stream(ref).append(updates: _*)
           case Failure(error) => throw error
         }
-      }
     }
   }
 

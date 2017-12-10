@@ -8,14 +8,14 @@ package com.woodpigeon.b3.schema.v100
 
 
 @SerialVersionUID(0L)
-final case class OffsetMap(
+final case class StreamOffsetMap(
     offsets: scala.collection.immutable.Map[String, Int] = scala.collection.immutable.Map.empty
-    ) extends com.trueaccord.scalapb.GeneratedMessage with com.trueaccord.scalapb.Message[OffsetMap] with com.trueaccord.lenses.Updatable[OffsetMap] {
+    ) extends com.trueaccord.scalapb.GeneratedMessage with com.trueaccord.scalapb.Message[StreamOffsetMap] with com.trueaccord.lenses.Updatable[StreamOffsetMap] {
     @transient
     private[this] var __serializedSizeCachedValue: Int = 0
     private[this] def __computeSerializedValue(): Int = {
       var __size = 0
-      offsets.foreach(offsets => __size += 1 + _root_.com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag(com.woodpigeon.b3.schema.v100.OffsetMap._typemapper_offsets.toBase(offsets).serializedSize) + com.woodpigeon.b3.schema.v100.OffsetMap._typemapper_offsets.toBase(offsets).serializedSize)
+      offsets.foreach(offsets => __size += 1 + _root_.com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag(com.woodpigeon.b3.schema.v100.StreamOffsetMap._typemapper_offsets.toBase(offsets).serializedSize) + com.woodpigeon.b3.schema.v100.StreamOffsetMap._typemapper_offsets.toBase(offsets).serializedSize)
       __size
     }
     final override def serializedSize: Int = {
@@ -29,11 +29,11 @@ final case class OffsetMap(
     def writeTo(`_output__`: _root_.com.google.protobuf.CodedOutputStream): Unit = {
       offsets.foreach { __v =>
         _output__.writeTag(1, 2)
-        _output__.writeUInt32NoTag(com.woodpigeon.b3.schema.v100.OffsetMap._typemapper_offsets.toBase(__v).serializedSize)
-        com.woodpigeon.b3.schema.v100.OffsetMap._typemapper_offsets.toBase(__v).writeTo(_output__)
+        _output__.writeUInt32NoTag(com.woodpigeon.b3.schema.v100.StreamOffsetMap._typemapper_offsets.toBase(__v).serializedSize)
+        com.woodpigeon.b3.schema.v100.StreamOffsetMap._typemapper_offsets.toBase(__v).writeTo(_output__)
       };
     }
-    def mergeFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): com.woodpigeon.b3.schema.v100.OffsetMap = {
+    def mergeFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): com.woodpigeon.b3.schema.v100.StreamOffsetMap = {
       val __offsets = (scala.collection.immutable.Map.newBuilder[String, Int] ++= this.offsets)
       var _done__ = false
       while (!_done__) {
@@ -41,64 +41,64 @@ final case class OffsetMap(
         _tag__ match {
           case 0 => _done__ = true
           case 10 =>
-            __offsets += com.woodpigeon.b3.schema.v100.OffsetMap._typemapper_offsets.toCustom(_root_.com.trueaccord.scalapb.LiteParser.readMessage(_input__, com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry.defaultInstance))
+            __offsets += com.woodpigeon.b3.schema.v100.StreamOffsetMap._typemapper_offsets.toCustom(_root_.com.trueaccord.scalapb.LiteParser.readMessage(_input__, com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry.defaultInstance))
           case tag => _input__.skipField(tag)
         }
       }
-      com.woodpigeon.b3.schema.v100.OffsetMap(
+      com.woodpigeon.b3.schema.v100.StreamOffsetMap(
           offsets = __offsets.result()
       )
     }
     def clearOffsets = copy(offsets = scala.collection.immutable.Map.empty)
-    def addOffsets(__vs: (String, Int)*): OffsetMap = addAllOffsets(__vs)
-    def addAllOffsets(__vs: TraversableOnce[(String, Int)]): OffsetMap = copy(offsets = offsets ++ __vs)
-    def withOffsets(__v: scala.collection.immutable.Map[String, Int]): OffsetMap = copy(offsets = __v)
+    def addOffsets(__vs: (String, Int)*): StreamOffsetMap = addAllOffsets(__vs)
+    def addAllOffsets(__vs: TraversableOnce[(String, Int)]): StreamOffsetMap = copy(offsets = offsets ++ __vs)
+    def withOffsets(__v: scala.collection.immutable.Map[String, Int]): StreamOffsetMap = copy(offsets = __v)
     def getFieldByNumber(__fieldNumber: Int): scala.Any = {
       (__fieldNumber: @_root_.scala.unchecked) match {
-        case 1 => offsets.map(com.woodpigeon.b3.schema.v100.OffsetMap._typemapper_offsets.toBase)(_root_.scala.collection.breakOut)
+        case 1 => offsets.map(com.woodpigeon.b3.schema.v100.StreamOffsetMap._typemapper_offsets.toBase)(_root_.scala.collection.breakOut)
       }
     }
     def getField(__field: _root_.scalapb.descriptors.FieldDescriptor): _root_.scalapb.descriptors.PValue = {
       require(__field.containingMessage eq companion.scalaDescriptor)
       (__field.number: @_root_.scala.unchecked) match {
-        case 1 => _root_.scalapb.descriptors.PRepeated(offsets.map(com.woodpigeon.b3.schema.v100.OffsetMap._typemapper_offsets.toBase(_).toPMessage)(_root_.scala.collection.breakOut))
+        case 1 => _root_.scalapb.descriptors.PRepeated(offsets.map(com.woodpigeon.b3.schema.v100.StreamOffsetMap._typemapper_offsets.toBase(_).toPMessage)(_root_.scala.collection.breakOut))
       }
     }
     override def toString: String = _root_.com.trueaccord.scalapb.TextFormat.printToUnicodeString(this)
-    def companion = com.woodpigeon.b3.schema.v100.OffsetMap
+    def companion = com.woodpigeon.b3.schema.v100.StreamOffsetMap
 }
 
-object OffsetMap extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpigeon.b3.schema.v100.OffsetMap] {
-  implicit def messageCompanion: com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpigeon.b3.schema.v100.OffsetMap] = this
-  def fromFieldsMap(__fieldsMap: scala.collection.immutable.Map[_root_.com.google.protobuf.Descriptors.FieldDescriptor, scala.Any]): com.woodpigeon.b3.schema.v100.OffsetMap = {
+object StreamOffsetMap extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpigeon.b3.schema.v100.StreamOffsetMap] {
+  implicit def messageCompanion: com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpigeon.b3.schema.v100.StreamOffsetMap] = this
+  def fromFieldsMap(__fieldsMap: scala.collection.immutable.Map[_root_.com.google.protobuf.Descriptors.FieldDescriptor, scala.Any]): com.woodpigeon.b3.schema.v100.StreamOffsetMap = {
     require(__fieldsMap.keys.forall(_.getContainingType() == javaDescriptor), "FieldDescriptor does not match message type.")
     val __fields = javaDescriptor.getFields
-    com.woodpigeon.b3.schema.v100.OffsetMap(
-      __fieldsMap.getOrElse(__fields.get(0), Nil).asInstanceOf[_root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry]].map(com.woodpigeon.b3.schema.v100.OffsetMap._typemapper_offsets.toCustom)(_root_.scala.collection.breakOut)
+    com.woodpigeon.b3.schema.v100.StreamOffsetMap(
+      __fieldsMap.getOrElse(__fields.get(0), Nil).asInstanceOf[_root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry]].map(com.woodpigeon.b3.schema.v100.StreamOffsetMap._typemapper_offsets.toCustom)(_root_.scala.collection.breakOut)
     )
   }
-  implicit def messageReads: _root_.scalapb.descriptors.Reads[com.woodpigeon.b3.schema.v100.OffsetMap] = _root_.scalapb.descriptors.Reads{
+  implicit def messageReads: _root_.scalapb.descriptors.Reads[com.woodpigeon.b3.schema.v100.StreamOffsetMap] = _root_.scalapb.descriptors.Reads{
     case _root_.scalapb.descriptors.PMessage(__fieldsMap) =>
       require(__fieldsMap.keys.forall(_.containingMessage == scalaDescriptor), "FieldDescriptor does not match message type.")
-      com.woodpigeon.b3.schema.v100.OffsetMap(
-        __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry]]).getOrElse(_root_.scala.collection.Seq.empty).map(com.woodpigeon.b3.schema.v100.OffsetMap._typemapper_offsets.toCustom)(_root_.scala.collection.breakOut)
+      com.woodpigeon.b3.schema.v100.StreamOffsetMap(
+        __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scala.collection.Seq[com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry]]).getOrElse(_root_.scala.collection.Seq.empty).map(com.woodpigeon.b3.schema.v100.StreamOffsetMap._typemapper_offsets.toCustom)(_root_.scala.collection.breakOut)
       )
     case _ => throw new RuntimeException("Expected PMessage")
   }
-  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = V100Proto.javaDescriptor.getMessageTypes.get(0)
-  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = V100Proto.scalaDescriptor.messages(0)
+  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = V100Proto.javaDescriptor.getMessageTypes.get(1)
+  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = V100Proto.scalaDescriptor.messages(1)
   def messageCompanionForFieldNumber(__number: Int): _root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_] = {
     var __out: _root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_] = null
     (__number: @_root_.scala.unchecked) match {
-      case 1 => __out = com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry
+      case 1 => __out = com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry
     }
     __out
   }
   lazy val nestedMessagesCompanions: Seq[_root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_]] = Seq[_root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_]](
-    _root_.com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry
+    _root_.com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry
   )
   def enumCompanionForFieldNumber(__fieldNumber: Int): _root_.com.trueaccord.scalapb.GeneratedEnumCompanion[_] = throw new MatchError(__fieldNumber)
-  lazy val defaultInstance = com.woodpigeon.b3.schema.v100.OffsetMap(
+  lazy val defaultInstance = com.woodpigeon.b3.schema.v100.StreamOffsetMap(
   )
   @SerialVersionUID(0L)
   final case class OffsetsEntry(
@@ -135,7 +135,7 @@ object OffsetMap extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.wo
           }
         };
       }
-      def mergeFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry = {
+      def mergeFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry = {
         var __key = this.key
         var __value = this.value
         var _done__ = false
@@ -150,7 +150,7 @@ object OffsetMap extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.wo
             case tag => _input__.skipField(tag)
           }
         }
-        com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry(
+        com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry(
             key = __key,
             value = __value
         )
@@ -177,49 +177,49 @@ object OffsetMap extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.wo
         }
       }
       override def toString: String = _root_.com.trueaccord.scalapb.TextFormat.printToUnicodeString(this)
-      def companion = com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry
+      def companion = com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry
   }
   
-  object OffsetsEntry extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry] {
-    implicit def messageCompanion: com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry] = this
-    def fromFieldsMap(__fieldsMap: scala.collection.immutable.Map[_root_.com.google.protobuf.Descriptors.FieldDescriptor, scala.Any]): com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry = {
+  object OffsetsEntry extends com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry] {
+    implicit def messageCompanion: com.trueaccord.scalapb.GeneratedMessageCompanion[com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry] = this
+    def fromFieldsMap(__fieldsMap: scala.collection.immutable.Map[_root_.com.google.protobuf.Descriptors.FieldDescriptor, scala.Any]): com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry = {
       require(__fieldsMap.keys.forall(_.getContainingType() == javaDescriptor), "FieldDescriptor does not match message type.")
       val __fields = javaDescriptor.getFields
-      com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry(
+      com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry(
         __fieldsMap.getOrElse(__fields.get(0), "").asInstanceOf[String],
         __fieldsMap.getOrElse(__fields.get(1), 0).asInstanceOf[Int]
       )
     }
-    implicit def messageReads: _root_.scalapb.descriptors.Reads[com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry] = _root_.scalapb.descriptors.Reads{
+    implicit def messageReads: _root_.scalapb.descriptors.Reads[com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry] = _root_.scalapb.descriptors.Reads{
       case _root_.scalapb.descriptors.PMessage(__fieldsMap) =>
         require(__fieldsMap.keys.forall(_.containingMessage == scalaDescriptor), "FieldDescriptor does not match message type.")
-        com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry(
+        com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry(
           __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[String]).getOrElse(""),
           __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[Int]).getOrElse(0)
         )
       case _ => throw new RuntimeException("Expected PMessage")
     }
-    def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = com.woodpigeon.b3.schema.v100.OffsetMap.javaDescriptor.getNestedTypes.get(0)
-    def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = com.woodpigeon.b3.schema.v100.OffsetMap.scalaDescriptor.nestedMessages(0)
+    def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = com.woodpigeon.b3.schema.v100.StreamOffsetMap.javaDescriptor.getNestedTypes.get(0)
+    def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = com.woodpigeon.b3.schema.v100.StreamOffsetMap.scalaDescriptor.nestedMessages(0)
     def messageCompanionForFieldNumber(__number: Int): _root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_] = throw new MatchError(__number)
     lazy val nestedMessagesCompanions: Seq[_root_.com.trueaccord.scalapb.GeneratedMessageCompanion[_]] = Seq.empty
     def enumCompanionForFieldNumber(__fieldNumber: Int): _root_.com.trueaccord.scalapb.GeneratedEnumCompanion[_] = throw new MatchError(__fieldNumber)
-    lazy val defaultInstance = com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry(
+    lazy val defaultInstance = com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry(
     )
-    implicit class OffsetsEntryLens[UpperPB](_l: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry]) extends _root_.com.trueaccord.lenses.ObjectLens[UpperPB, com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry](_l) {
+    implicit class OffsetsEntryLens[UpperPB](_l: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry]) extends _root_.com.trueaccord.lenses.ObjectLens[UpperPB, com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry](_l) {
       def key: _root_.com.trueaccord.lenses.Lens[UpperPB, String] = field(_.key)((c_, f_) => c_.copy(key = f_))
       def value: _root_.com.trueaccord.lenses.Lens[UpperPB, Int] = field(_.value)((c_, f_) => c_.copy(value = f_))
     }
     final val KEY_FIELD_NUMBER = 1
     final val VALUE_FIELD_NUMBER = 2
-    implicit val keyValueMapper: _root_.com.trueaccord.scalapb.TypeMapper[com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry, (String, Int)] =
-      _root_.com.trueaccord.scalapb.TypeMapper[com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry, (String, Int)](__m => (__m.key, __m.value))(__p => com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry(__p._1, __p._2))
+    implicit val keyValueMapper: _root_.com.trueaccord.scalapb.TypeMapper[com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry, (String, Int)] =
+      _root_.com.trueaccord.scalapb.TypeMapper[com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry, (String, Int)](__m => (__m.key, __m.value))(__p => com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry(__p._1, __p._2))
   }
   
-  implicit class OffsetMapLens[UpperPB](_l: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.OffsetMap]) extends _root_.com.trueaccord.lenses.ObjectLens[UpperPB, com.woodpigeon.b3.schema.v100.OffsetMap](_l) {
+  implicit class StreamOffsetMapLens[UpperPB](_l: _root_.com.trueaccord.lenses.Lens[UpperPB, com.woodpigeon.b3.schema.v100.StreamOffsetMap]) extends _root_.com.trueaccord.lenses.ObjectLens[UpperPB, com.woodpigeon.b3.schema.v100.StreamOffsetMap](_l) {
     def offsets: _root_.com.trueaccord.lenses.Lens[UpperPB, scala.collection.immutable.Map[String, Int]] = field(_.offsets)((c_, f_) => c_.copy(offsets = f_))
   }
   final val OFFSETS_FIELD_NUMBER = 1
   @transient
-  private val _typemapper_offsets: _root_.com.trueaccord.scalapb.TypeMapper[com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry, (String, Int)] = implicitly[_root_.com.trueaccord.scalapb.TypeMapper[com.woodpigeon.b3.schema.v100.OffsetMap.OffsetsEntry, (String, Int)]]
+  private val _typemapper_offsets: _root_.com.trueaccord.scalapb.TypeMapper[com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry, (String, Int)] = implicitly[_root_.com.trueaccord.scalapb.TypeMapper[com.woodpigeon.b3.schema.v100.StreamOffsetMap.OffsetsEntry, (String, Int)]]
 }
