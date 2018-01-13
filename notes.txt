@@ -1,0 +1,123 @@
+
+Choice between unified log, and per-aggregate ones
+
+A unified log is in many ways more efficient (and simplifies listening)
+
+Simpler to store, simpler to access, simpler to follow
+
+But without partitions, then we have to load the _entire_ log to keep up to date; there's no natural strategy of obsolesence
+
+At least with the per-aggregate approach, we can gradually retire streams as they fall out of use.
+
+------------------------------------------------
+
+The issue is in efficiency of loading.
+
+To, say, fill out an index with items, we would need to call the database once per item (unless we also stored views)
+
+Partially-materialized views are interesting.
+
+But how would they suit a changing roster of products, and also changing patterns of usage?
+
+Different patterns of usage would require new indices to be coded and named. Old ones would fall out of use, and eventually be garbage-collected.
+
+------------------------------------------------
+
+Rebuilding such indexes from a disparate set of streams becomes problematic. There needs to be a central registry, a central log.
+
+And then inferior logs that can be built from the central, unified one. The central log is suited to committing, but its changes can then
+be broadcast out to per-aggregate projections, that are themselves encoded as streams of events.
+
+A log can then spawn dependent children...
+
+------------------------------------------------
+
+There is then the one log. But how to accept events into the log, then? Whatever sentry is going to have to be completely up to date.
+And to be utterly to the moment from the very depths of the past, all events are going to have to have been ingested.
+
+This is useless for a system that will be resuscitated and reloaded on every change.
+
+Aggregations need to then store state - a snapshot.
+
+------------------------------------------------
+
+But if streams are separated to begin with, then the list of events is localised, so that the occasionally-compacted entity log becomes an efficient representation.
+
+Loading an entity becomes a task of loading a certain block of events, and then passing them through an aggregator.
+
+You want to load a page of clothes. There's an index of clothes. Having loaded the index, we know where to go for our full clothes details, though all we need would hopefully
+be aggregated into a partially-populated and filled out index. Each change to a hat gets communicated to the respective index, which fills out its big representation.
+
+But then each change to hat, prospectively, would be duplicated into this secondary index.
+
+But at least there'd be a clear hierarchy of freshness here - changes to a hat would be propagated on to whatever secondary indexes abounded.
+
+So - in loading up the big index, we'd load a big block of commits, and aggregate them all into a memory representation.
+
+There could be a cache, though a short-lived one. Also, how would we know we were up to date? There are ways and means.
+
+------------------------------------------------
+
+But what if each aggregate were a projection of a unified log, simple to commit to, etc.
+
+The problem comes in allowing events into the system - there need to be sentries protecting us from bad stuff, giving confirmations, etc.
+
+Or - could we just give up on the defensiveness? Allow everything in. If anything untoward happens, then bah. What will we enforce?
+
+Erm, that we're up to date? It's certainly helpful to protect our hinterland, as a mucus membrane repelling alien microbes.
+
+If we weren't so picky about protection, we could just shovel data in and wait for updates.
+
+How about competing writes? This'd be a problem. Our aggregators would then need to cope with conflicts.
+
+-------------------------------------------------
+
+But even without the prophylactic layer, our committers would want to be brought up to date.
+
+The UL would be very difficult to replicate: our replicas couldn't be expected to follow from the very beginning each time.
+
+I suppose - our replicas wouldn't replicate the UL; they'd just replicate certain projections of it. But committing would be done to the central journal.
+
+Then are we expecting the client to subscribe to certain streams? How in the hell are we going to achieve that? Polling.
+
+--------------------------------------------------
+
+But we have only one client. That one client loads up loads of events as it wishes, direct from S3 storage! Or even from SimpleDB.
+
+On reading, it'd need to load the/an index document, to ensure it was up to date. Narp. It'd just load the latest stream.
+
+The simplest thing would be to commit optimistically to the central UL: but then we couldn't reject commits that had been gazumped.
+
+But... so what. Go for the simple. Sidestep and try to eke a way through. Something is better than nothing.
+
+So, we'd commit to the central log and let the system do its stuff. The UL would therefore need compacting/processing quickly like.
+
+But then, how'd we update our local aggregates? Well, the same aggregation should be being done locally too. The problem is in the initial
+bringing of these up to date.
+
+A successful committing of events would then be immediately reflected locally. And the separation of streams would allow bits to be sloughed off.
+There'd be separation, and therefore performance.
+
+Otherwise: the UL as a quickly-rotating entity. But if the UL were to be replicated locally also, then we'd have to project *everything*.
+Unless projections were only processed on a pull basis. But then how would the UL self-clean? Complicatedly.
+
+What was the dream of the UL? The wish to do something different?
+
+A clear hierarchy of streams: the UL would sit at the top, piddling downwards. A commit at the top would be the absolute truth.
+All more lowly streams would be brought into line. Perched above, it'd pipe keenly, getting it's inferiors dancing, like.
+
+But then replication of only a part of the data would be impossible. And also, history would have to be recreated from its very beginning each time, unless we were
+to give in to the lameness and resort to snapshots. The dream is no snapshots. With compaction we can keep our structures leen and efficiently packed.
+
+-------------------------------------
+
+Would compaction be done by all parties, or just by the server? Well, compaction should only clear away useless, invisible history, obsolete stuff.
+
+Compaction should occur as and when on the server, and all the clients would be none the wiser.
+
+-------------------------------------
+
+So we are where we were previously: committing optimistically per aggregate, with all commits triggering follow-on events of certain kinds. Very fucking familiar.
+
+But very fucking comfortable also, and effective, one would hope.
+

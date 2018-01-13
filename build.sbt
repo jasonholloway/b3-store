@@ -37,12 +37,10 @@ val jsSettings = Seq(
   }
 )
 
-val jvmSettings = Seq(
-  libraryDependencies ++= Seq(
-    "org.scala-js" %% "scalajs-stubs" % scalaJSVersion % "provided",
-    "org.scalactic" %% "scalactic" % "3.0.1",
-    "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-  )
+val jvmDependencies = Seq(
+  "org.scala-js" %% "scalajs-stubs" % scalaJSVersion % "provided",
+  "org.scalactic" %% "scalactic" % "3.0.1",
+  "org.scalatest" %% "scalatest" % "3.0.1" % "test",
 )
 
 
@@ -57,7 +55,9 @@ lazy val schema = (crossProject in file("schema"))
   ))
 
 lazy val schemaJVM = schema.jvm
-    .settings(jvmSettings)
+    .settings(
+      libraryDependencies ++= jvmDependencies
+    )
 
 lazy val schemaJS = schema.js
     .settings(jsSettings)
@@ -71,29 +71,33 @@ lazy val data = (crossProject in file("data"))
       libraryDependencies ++= dataDependencies
     )
 
-val dataDependencies = Seq(
+val dataDependencies = jvmDependencies ++ Seq(
   "org.scala-lang.modules" %% "scala-async" % "0.9.6",
   "org.typelevel" %% "cats-core" % "1.0.0-RC1",
   "org.typelevel" %% "alleycats-core" % "1.0.0-RC1"
 )
 
 lazy val dataJVM = data.jvm
-    .settings(jvmSettings)
-    .dependsOn(schema.jvm)
+    .settings(
+      libraryDependencies ++= dataDependencies
+    )
+    .dependsOn(schema.jvm, dataShared)
 
 lazy val dataJS = data.js
     .settings(jsSettings,
       libraryDependencies ++= Seq(
-        "org.julienrf" %%% "faithful" % "1.0.0"
+        "org.julienrf" %%% "faithful" % "1.0.0",
+        "org.typelevel" %%% "cats-core" % "1.0.0-RC1",
+        "org.typelevel" %%% "alleycats-core" % "1.0.0-RC1"
       ),
       resolvers += Resolver.sonatypeRepo("releases")
     )
-    .dependsOn(schema.js)
+    .dependsOn(schema.js, dataShared)
     .enablePlugins(ScalaJSPlugin)
 
 
 lazy val dataShared = (project in file("data/shared"))
-  .settings(jvmSettings,
+  .settings(
     libraryDependencies ++= dataDependencies
   )
   .dependsOn(schema.jvm)

@@ -19,6 +19,7 @@ message Event {
     oneof inner {
         AddNote addNote = 7;
         PutProduct putProduct = 8;
+        PutProductDetails putProductDetails = 9;
     }
 }
 
@@ -27,6 +28,14 @@ message Event {
 
 message NoteList {
     repeated string notes = 1;
+}
+
+message ProductInfo {
+    string name = 1;
+}
+
+message ProductSet {
+    repeated string Skus = 1;
 }
 
 
@@ -54,3 +63,8 @@ message PutImage {
     string url = 2;
 }
 
+message PutProductDetails {
+    string sku = 1;
+    string name = 2;
+    float price = 3;
+}
