@@ -31,7 +31,9 @@ message NoteList {
 }
 
 message ProductInfo {
-    string name = 1;
+    string sku = 1;
+    string name = 2;
+    float price = 3;
 }
 
 message ProductSet {
@@ -67,4 +69,9 @@ message PutProductDetails {
     string sku = 1;
     string name = 2;
     float price = 3;
+}
+
+
+message AnnounceProduct {
+    string sku = 1;
 }

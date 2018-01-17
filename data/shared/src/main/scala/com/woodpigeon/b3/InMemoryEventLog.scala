@@ -40,7 +40,6 @@ class InMemoryEventLog extends EventLog {
   }
 
 
-  //noinspection ConvertExpressionToSAM
   def stream(ref: Key) : AppendableStream =
     new AppendableStream {
       override def append(newUpdates: Update*): Unit = store.get(ref) match {
