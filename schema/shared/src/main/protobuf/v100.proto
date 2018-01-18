@@ -24,20 +24,20 @@ message Event {
 }
 
 
-//Aggregations ----------------------
+//Views ----------------------
 
 message NoteList {
     repeated string notes = 1;
 }
 
-message ProductInfo {
+message ProductView {
     string sku = 1;
     string name = 2;
     float price = 3;
 }
 
-message ProductSet {
-    repeated string Skus = 1;
+message ProductSetView {
+    repeated string skus = 1;
 }
 
 
@@ -66,9 +66,8 @@ message PutImage {
 }
 
 message PutProductDetails {
-    string sku = 1;
-    string name = 2;
-    float price = 3;
+    string name = 1;
+    float price = 2;
 }
 
 

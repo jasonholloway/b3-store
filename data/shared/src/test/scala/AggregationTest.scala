@@ -1,30 +1,24 @@
 import com.woodpigeon.b3._
 import org.scalatest.AsyncFreeSpec
 import com.woodpigeon.b3.Update._
-import Updaters._
-import Creators._
-import Namers._
-import Projectors._
+import Handlers._
+import Stringifiers._
 import com.woodpigeon.b3.schema.v100._
-
 import scala.language.implicitConversions
 
 class AggregationTest extends AsyncFreeSpec {
 
-
   "Products" - {
-
     "given some PutProductDetails"- {
-
       val log = new InMemoryEventLog()
-      log.stream("Product/1234").append(
-        PutProductDetails("SOCKS1", "Fluffy socks")
+      log.stream("Product/FLUFFY1").append(
+        PutProductDetails("Fluffy socks")
       )
 
       "should return those details" in {
-        new Fons(log).view(Ref.product("1234"))
+        new Fons(log).view(Ref.product("FLUFFY1"))
             .map(view => {
-              assert(view.sku == "SOCKS1")
+              assert(view.sku == "FLUFFY1")
               assert(view.name == "Fluffy socks")
             })
       }
@@ -32,13 +26,11 @@ class AggregationTest extends AsyncFreeSpec {
   }
 
 
-  "ProductSet 'Products'" - {
-
+  "ProductSet" - {
     "given some products" - {
-
       val log = new InMemoryEventLog()
-      log.stream("Product/1234").append(PutProductDetails("SOCKS1", "Fluffy socks"))
-      log.stream("Product/2234").append(PutProductDetails("SOCKS2", "Coarse bristly mittens"))
+      log.stream("Product/SOCKS1").append(PutProductDetails("Fluffy socks"))
+      log.stream("Product/SOCKS2").append(PutProductDetails("Coarse bristly mittens"))
 
       "should have two SKUs in it" in {
         val fons = new Fons(log)
@@ -48,8 +40,6 @@ class AggregationTest extends AsyncFreeSpec {
             })
       }
 
-      //...
-
     }
 
   }
@@ -57,12 +47,12 @@ class AggregationTest extends AsyncFreeSpec {
 
   "ProductSet collects all created products" in {
     val log = new InMemoryEventLog()
-    log.stream("666").append(
-      new PutProductDetails("p123", "Velvet Socks", 0.50f)
+    log.stream("Product/p123").append(
+      new PutProductDetails("Velvet Socks", 0.50f)
     )
 
-    log.stream("667").append(
-      new PutProductDetails("p456", "Hair Shirt", 13.33f)
+    log.stream("Product/p456").append(
+      new PutProductDetails("Hair Shirt", 13.33f)
     )
 
     val fons = new Fons(log)
@@ -71,18 +61,5 @@ class AggregationTest extends AsyncFreeSpec {
           assert(productSet.skus == Seq("p123", "p456"))
         })
   }
-
-
-//
-//  "ProductInfo" - {
-//    val log = new InMemoryEventLog()
-//
-//    log.stream("1234").append()
-//
-//    val fons = new Fons(log)
-//    val info = fons.viewAs[ProductInfo]("1234", "ProductInfo")
-//
-//    ???
-//  }
 
 }
