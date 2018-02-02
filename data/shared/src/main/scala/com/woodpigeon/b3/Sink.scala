@@ -18,6 +18,20 @@ class Sink(log: EventLog) {
 }
 
 
+
+
+
+//the Sink takes events in, executes them in batch
+//or... nope!
+//the Sink takes events and projects them immediately
+//it stores them in a cumulative batch
+
+//as soon as they're stored in the batch, they are available to the Fons - ie the Fons needs to read events
+//from a two-layered log
+
+//eventually we will flush the batch to the server
+
+
 object Sink {
   implicit class Extensions(sink: Sink) {
     def commit(fragment: StreamFragment): Future[Unit] =

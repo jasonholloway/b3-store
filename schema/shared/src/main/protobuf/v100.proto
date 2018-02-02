@@ -2,17 +2,17 @@ syntax = "proto3";
 
 package com.woodpigeon.b3.schema;
 
-message StreamFragment {
-    string ref = 1;
+message LogFragment {
+    uint32 offset = 1;
     repeated Event events = 2;
 }
 
-message StreamOffsetMap {
-    map<string, uint32> offsets = 1;
+message LogFragmentMap {
+    map<string, LogFragment> fragments = 1;
 }
 
-message StreamFragmentBatch {
-    repeated StreamFragment fragments = 1;
+message LogOffsetMap {
+    map<string, uint32> offsets = 1;
 }
 
 message Event {

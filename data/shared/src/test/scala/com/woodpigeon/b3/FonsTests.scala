@@ -1,25 +1,42 @@
-import com.woodpigeon.b3._
-import org.scalatest.AsyncFreeSpec
-import com.woodpigeon.b3.Update._
-import Handlers._
-import Stringifiers._
+package com.woodpigeon.b3
+
+import com.woodpigeon.b3.Behaviours._
+import com.woodpigeon.b3.RawUpdate._
 import com.woodpigeon.b3.schema.v100._
+import org.scalatest.AsyncFreeSpec
+
+import scala.concurrent.Future
 import scala.language.implicitConversions
 
-class AggregationTest extends AsyncFreeSpec {
+
+
+
+class FonsTests extends AsyncFreeSpec {
+
+  val logSource = new LogSource {
+    def read(logName: String, offset: Int): Future[LogSpan] = ???
+  }
+
 
   "Products" - {
-    "given some PutProductDetails"- {
+
+    "SKU determined by name" - {
+      new Fons(logSource)
+        .view(Ref.product("GLOVE3"))
+        .map(v => assert(v.sku == "GLOVE3"))
+    }
+
+    "given some PutProductDetails" - {
       val log = new InMemoryEventLog()
-      log.stream("Product/FLUFFY1").append(
+      log.stream("Product#FLUFFY1").append(
         PutProductDetails("Fluffy socks")
       )
 
       "should return those details" in {
-        new Fons(log).view(Ref.product("FLUFFY1"))
-            .map(view => {
-              assert(view.sku == "FLUFFY1")
-              assert(view.name == "Fluffy socks")
+        new Fons(logSource).view(Ref.product("FLUFFY1"))
+            .map(v => {
+              assert(v.sku == "FLUFFY1")
+              assert(v.name == "Fluffy socks")
             })
       }
     }
@@ -33,7 +50,7 @@ class AggregationTest extends AsyncFreeSpec {
       log.stream("Product/SOCKS2").append(PutProductDetails("Coarse bristly mittens"))
 
       "should have two SKUs in it" in {
-        val fons = new Fons(log)
+        val fons = new Fons(logSource)
         fons.view(Ref.allProducts)
             .map(view => {
               assert(view.skus.lengthCompare(2) == 0)
@@ -41,7 +58,6 @@ class AggregationTest extends AsyncFreeSpec {
       }
 
     }
-
   }
 
 
@@ -55,7 +71,7 @@ class AggregationTest extends AsyncFreeSpec {
       new PutProductDetails("Hair Shirt", 13.33f)
     )
 
-    val fons = new Fons(log)
+    val fons = new Fons(logSource)
     fons.view(Ref.allProducts)
         .map(productSet => {
           assert(productSet.skus == Seq("p123", "p456"))

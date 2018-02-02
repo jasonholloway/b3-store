@@ -1,12 +1,49 @@
-import com.woodpigeon.b3.{EventLog, InMemoryEventLog, Update}
-import com.woodpigeon.b3.Update._
-import com.woodpigeon.b3.schema.v100._
-import org.scalatest.AsyncFreeSpec
-import cats.implicits._
+package com.woodpigeon.b3
 
+import cats.implicits._
+import com.woodpigeon.b3.RawUpdate._
+import com.woodpigeon.b3.schema.v100._
+import org.scalatest.{AsyncFreeSpec, FreeSpec}
 import scala.async.Async.{async, await}
 import scala.language.implicitConversions
-import scala.util.Success
+
+class LogCacheTests extends FreeSpec {
+
+  private def newUpdates(words: String*): List[RawUpdate] =
+    words.map(w => RawUpdate.convert(AddNote(w))).toList
+
+  "LogCache" - {
+    val cache = new LogCache()
+
+    "stores and regurgitates updates" in {
+      val updates = newUpdates("Hello", "Jason!")
+
+      cache("log1").append(LogSpan(0, updates))
+
+      val returned = cache("log1").read()
+      assert(returned.start == 0)
+      assert(returned.events(0) == updates(0))
+      assert(returned.events(1) == updates(1))
+    }
+
+    "refuses to append if offset doesn't match" in {
+      cache("log1").append(LogSpan(0, List(AddNote("Blahhh"))))
+
+      val result = cache("log1").append(LogSpan(10, List(AddNote("Wibble"))))
+
+      assert(result.isFailure)
+    }
+
+    "returns empty LogSpan as default" in {
+      val result = cache("giraffe").read()
+      assert(result.start == 0)
+      assert(result.end == 0)
+    }
+
+  }
+
+}
+
 
 
 class EventLogTests extends AsyncFreeSpec {
@@ -18,7 +55,7 @@ class EventLogTests extends AsyncFreeSpec {
         val log = newLog()
 
         val fragments = Seq(
-          StreamFragment("TEST:123", Seq[Update](
+          StreamFragment("TEST:123", Seq[RawUpdate](
             AddNote("Hello"), AddNote("there"), AddNote("Jason!")
           ))
         )
@@ -32,7 +69,7 @@ class EventLogTests extends AsyncFreeSpec {
         val log = newLog()
 
         val batch = StreamFragmentBatch(Seq(
-          StreamFragment("TEST:123", Seq[Update](
+          StreamFragment("TEST:123", Seq[RawUpdate](
             AddNote("Hello"), AddNote("there"), AddNote("Jason!")
           ))
         ))
@@ -60,7 +97,7 @@ class EventLogTests extends AsyncFreeSpec {
         val log = newLog()
 
         val batch1 = StreamFragmentBatch(Seq(
-          StreamFragment("TEST:123", Seq[Update](
+          StreamFragment("TEST:123", Seq[RawUpdate](
             AddNote("Hello")
           ))
         ))
@@ -68,7 +105,7 @@ class EventLogTests extends AsyncFreeSpec {
         await { log.write(batch1) }
 
         val batch2 = StreamFragmentBatch(Seq(
-          StreamFragment("TEST:123", Seq[Update](
+          StreamFragment("TEST:123", Seq[RawUpdate](
             AddNote("there"), AddNote("Jason!")
           ))
         ))
@@ -81,7 +118,7 @@ class EventLogTests extends AsyncFreeSpec {
 
         val phrase = returned.fragments.flattenUpdates
                       .flatMap {
-                        case Update(AddNote(message))
+                        case RawUpdate(AddNote(message))
                           => Some(message)
                         case _ => None
                       }.mkString(" ")
@@ -96,7 +133,7 @@ class EventLogTests extends AsyncFreeSpec {
 
 
   implicit class EnrichedFragments(fragments: Seq[StreamFragment]) {
-    def flattenUpdates: Seq[Update]
+    def flattenUpdates: Seq[RawUpdate]
       = fragments.flatMap(_.events).toList.traverse(_.asUpdate).get
 
   }

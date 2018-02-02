@@ -6,36 +6,40 @@ import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
 
-trait Update {
+case class Update(entityName: String, raw: RawUpdate)
+
+
+
+trait RawUpdate {
   def asEvent(): Event
 }
 
 
-object Update {
+object RawUpdate {
 
-  def unapply(update: Update): Option[Any]
+  def unapply(update: RawUpdate): Option[Any]
     = Some(update.asEvent().inner.value)
 
-  implicit def convert(ev: AddNote) : Update
+  implicit def convert(ev: AddNote) : RawUpdate
     = () => Event().withAddNote(ev)
 
-  implicit def convert(ev: PutProduct) : Update
+  implicit def convert(ev: PutProduct) : RawUpdate
     = () => Event().withPutProduct(ev)
 
-  implicit def convert(ev: PutProductDetails) : Update
+  implicit def convert(ev: PutProductDetails) : RawUpdate
     = () => Event().withPutProductDetails(ev)
 
 
 
-  implicit def updateToEvent(update: Update): Event
+  implicit def updateToEvent(update: RawUpdate): Event
     = update.asEvent()
 
-  implicit def updatesToEvents(updates: Seq[Update]) : Seq[Event]
+  implicit def updatesToEvents(updates: Seq[RawUpdate]) : Seq[Event]
     = updates map { _.asEvent() }
 
   implicit class RichEvent(ev: Event)
   {
-    def asUpdate: Try[Update] = ev match {
+    def asUpdate: Try[RawUpdate] = ev match {
       case Event(Event.Inner.AddNote(addNote)) => Success(addNote)
       case Event(Event.Inner.PutProduct(putProduct)) => Success(putProduct)
       case _ => Failure(new MatchError())

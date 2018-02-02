@@ -4,14 +4,14 @@ import com.woodpigeon.b3.schema.v100._
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import Update._
+import RawUpdate._
 import cats.implicits._
 import scala.util.{Failure, Success}
 
 class InMemoryEventLog extends EventLog {
 
   private type Key = String
-  private type Stream = (Int, List[Update])
+  private type Stream = (Int, List[RawUpdate])
 
   private var store = mutable.Map[Key, Stream]()
 
@@ -42,7 +42,7 @@ class InMemoryEventLog extends EventLog {
 
   def stream(ref: Key) : AppendableStream =
     new AppendableStream {
-      override def append(newUpdates: Update*): Unit = store.get(ref) match {
+      override def append(newUpdates: RawUpdate*): Unit = store.get(ref) match {
         case Some((head, updates)) =>
           store(ref) = (head + newUpdates.length, newUpdates.foldLeft(updates){(ac, u) => u :: ac})
         case None =>
@@ -52,7 +52,7 @@ class InMemoryEventLog extends EventLog {
 
 
   trait AppendableStream {
-    def append(updates: Update*) : Unit
+    def append(updates: RawUpdate*) : Unit
   }
 
 }
