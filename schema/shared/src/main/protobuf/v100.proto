@@ -20,6 +20,7 @@ message Event {
         AddNote addNote = 7;
         PutProduct putProduct = 8;
         PutProductDetails putProductDetails = 9;
+        AnnounceProduct announceProduct = 10;
     }
 }
 

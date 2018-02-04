@@ -1,6 +1,6 @@
 package com.woodpigeon.b3
 import com.trueaccord.scalapb.Message
-import com.woodpigeon.b3.schema.v100.{AddNote, Event, PutProduct, PutProductDetails}
+import com.woodpigeon.b3.schema.v100._
 
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
@@ -28,6 +28,9 @@ object RawUpdate {
 
   implicit def convert(ev: PutProductDetails) : RawUpdate
     = () => Event().withPutProductDetails(ev)
+
+  implicit def convert(ev: AnnounceProduct) : RawUpdate
+    = () => Event().withAnnounceProduct(ev)
 
 
 

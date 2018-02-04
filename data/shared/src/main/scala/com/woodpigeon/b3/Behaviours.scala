@@ -1,26 +1,10 @@
 package com.woodpigeon.b3
 
 import com.woodpigeon.b3.schema.v100.{AnnounceProduct, ProductSetView, ProductView, PutProductDetails}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 object Behaviours {
-
-  implicit val productBehaviour = new Behaviour[Product] {
-
-      def name(sku: SKU): String = s"Product#${sku.string}"
-
-      def create(sku: SKU): ProductView
-        = ProductView().withSku(sku.string)
-
-      def update(ac: ProductView, update: Any): Option[ProductView] = update match {
-        case PutProductDetails(name, price) => Some(ac.withName(name)
-                                                      .withPrice(price))
-        case _ => None
-      }
-
-      def project(sku: SKU, ac: ProductView, version: Int, update: Any): Seq[Any] =
-        if(version == 1) Ref.allProducts.send(AnnounceProduct(sku.string)) else Nil
-
-    }
 
 
   implicit val productSetBehaviour = new Behaviour[ProductSet] {
@@ -29,13 +13,37 @@ object Behaviours {
 
     def create(name: String): ProductSetView = ProductSetView()
 
-    def update(ac: ProductSetView, update: Any): Option[ProductSetView] = update match {
-        case AnnounceProduct(sku) => Some(ac.addSkus(sku))
+    def update(curr: ProductSetView, update: Any): Option[ProductSetView] = update match {
+      case AnnounceProduct(sku) => Some(curr.addSkus(sku))
+      case _ => None
+    }
+
+    def project(x: Updater, key: String, before: ProductSetView, after: ProductSetView, update: Any): Future[_] =
+      Future()
+
+  }
+
+
+  implicit val productBehaviour = new Behaviour[Product] {
+
+    def name(sku: SKU): String = s"Product#${sku.string}"
+
+    def create(sku: SKU): ProductView =
+      ProductView().withSku(sku.string)
+
+    def update(curr: ProductView, update: Any): Option[ProductView] = {
+      update match {
+        case PutProductDetails(name, price) => Some(curr.withName(name)
+                                                        .withPrice(price))
         case _ => None
       }
+    }
 
-    def project(name: String, ac: ProductSetView, version: Int, update: Any): Seq[Any] = Seq()
+    def project(x: Updater, sku: SKU, before: ProductView, after: ProductView, update: Any): Future[_] =
+      x.write(Ref.allProducts, AnnounceProduct(sku.string))
+
   }
+
 
 
 }

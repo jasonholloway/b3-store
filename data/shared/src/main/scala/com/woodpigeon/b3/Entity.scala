@@ -2,7 +2,7 @@ package com.woodpigeon.b3
 
 import com.woodpigeon.b3.schema.v100.{ProductSetView, ProductView}
 
-sealed trait Entity {
+trait Entity {
   type Key
   type View
 }

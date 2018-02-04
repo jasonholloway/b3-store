@@ -1,0 +1,67 @@
+
+//to send updates to a ref, the ref itself needs to be a wrapper
+//a RichRef, enclosing a reference to a staging sink.
+//
+//But if we write to multiple logs at once, then how can we be certain of keeping track with em?
+//Because our Context will be ours only
+//
+//But the send method would return updates - but these updates must themselves depend on
+//current states from the Fons. And so projection-processing would itself be async.
+//
+//Are they in the cache, these projected entitities? Would we have to summon up-to-date versions repeatedly from the server?
+//It seems like we would. The alternative is to project with consistency locally. As long as we had something locally, we'd be OK.
+//But where's the dividing line between having something trustable, and suspecting there's more to fetch?
+//It feels like on every write, we should check with the server. Though this surely gets expensive.
+//
+//Plus, there's the situation where we have already staged stuff - in this case all we can do is to continue our appending to it,
+//and only check its upstream consistency when we try to commit.
+//
+//A third way would be to load from upstream only when we have nothing at all. Onto this we append - forever? There's gotta be some kind of
+//timeout on the cache. ie we'd only trust it if it were so fresh. Or maybe we'd never trust it - we'd always question it by asking the server for confirmation.
+//
+//Otherwise, we could just post updates, without checking the consistency. There's no need to look at the index before posting to it - we don't care about the consistency here.
+//Though - we do if we have just deleted an entity. But then, we should know this from our *consistent* write to the entity itself.
+//Or even - the server will notice the discrepancy when we submit our batch, and say 'no'. We will then have to start again.
+//
+//And so - our updater shouldn't need the Fons. Enforcing consistency on the client requires snappy cache invalidation from above.
+//Also, enforcing consistency up front - ie letting entities say 'no!' to incoming updates, requires validation not just on the client but on the server too.
+//Which we want to sidestep.
+//
+//SO! Updater needs no Fons. Updater simply appends into staging, that's it.
+//
+//Well - it also projects, of course. Which again doesn't require any Fons or async loading.
+//projections just rattle in.
+//
+//BUT! On committing to the server, so that consistency can be checked, our LogSpans need to know where they're supposed to sit - ie from which offset.
+//The server is then in charge of making sure we haven't been gazumped at all.
+//How can the projections know where we're up to? All updates need to know the baseline against which they're applied.
+//
+//So, if we're going to have this server-side consistency, the client needs to know its offsets, at least.
+//
+//Though these offsets are meaningless to the behaviour of the client if they are not represented as snapshotted views. So we're back to the beginning again.
+//
+//How about if - in a better reflection of reality - we required consistency in only some entities. Things like Products, yes - we can't be gazumped in these.
+//
+//But indexes don't much matter - not least because projections to these will always be done as slave events consequent on proper consistent writes. The consistent
+//writes to our full entities regulate themselves, but our indices just spew away.
+
+//And how about compactions of these inconsistent logs? Could these just be done? There'd have to be locking done in this case anyway, as we wouldn't just be appending.
+//
+//-----
+//A further problem. If the user has a long-running context - days or whatever - with a change that's unsaved, and they then access an index that their own changes should influence -
+//what happens then? Reads must be consistent with the context. Anything subject to update by the current context must then be loaded into that context as soon as touched, and locked.
+//
+//A long-running context is then fine, but it becomes increasingly susceptible to gazumption.
+//
+//The greatest source of conflict here would be in the secondary indices, written to by many different entities.
+//in this case (limited for us now) then the server could combine together by simple appendage.
+//
+//BUT we're back at our starting point: updating requires loading from the fons.
+//
+//AND having loaded something from the server, that view should be locked until we commit. When we commit (which is a Context-wide convulsion) our cache isn't cleared (or is it), but our lock on it is.
+//
+//the problem of loading the index log on each commit to it is still a problem however. Imagine a big view of data that is projected to on each instance. If we insist on loading an entire view each time
+//to support our projecting, then all this data will be pulled back. We could potentially have a second system of out-of-band projections inacessible via the normal interface. No need to force it all together.
+//
+//Partition is our answer. For client side bits, we want to load what we can and lock.
+//

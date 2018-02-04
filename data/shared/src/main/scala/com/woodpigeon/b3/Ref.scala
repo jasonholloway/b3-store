@@ -10,3 +10,8 @@ object Ref {
   val allProducts = Ref[ProductSet]("Products")
   def product(sku: String) = Ref[Product](SKU(sku))
 }
+
+
+
+
+

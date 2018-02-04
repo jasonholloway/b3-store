@@ -27,17 +27,20 @@ class Context(logSource: LogSource, logSink: LogSink) {
   })
 
   def view[E <: Entity :Behaviour](ref: Ref[E]) = fons.view(ref)
-  def write[E <: Entity :Behaviour](ref: Ref[E], update: RawUpdate) = updater.write(ref, update)
+  def write[E <: Entity :Behaviour, U](ref: Ref[E], update: U)(implicit wrap: U => RawUpdate) = updater.write(ref, update)
   def save(): Future[Unit] = ???
 }
 
 
 class Updater(fons: Fons, log: LogSink) {
-  def write[E <: Entity](ref: Ref[E], update: RawUpdate)(implicit handler: Behaviour[E]) : Future[E#View] =
+  def write[E <: Entity, U](ref: Ref[E], update: U)(implicit behaviour: Behaviour[E], wrap: U => RawUpdate) : Future[E#View] =
     for {
-      curr <- fons.view(ref)
-      next <- Future(handler.update(curr, update).getOrElse(throw new Error("Bad update!")))
-      _ <- Future.fromTry(log.append(handler.name(ref.name), LogSpan(0, List(update))))
-    } yield next
+      before  <- fons.view(ref)
+      after   <- Future(behaviour.update(before, update).getOrElse(throw new Error("Bad update!")))
+      _       <- behaviour.project(this, ref.name, before, after, update)
+      _       <- Future.fromTry(log.append(behaviour.name(ref.name), LogSpan(0, List(wrap(update)))))
+    } yield after
+
+
 
 }
