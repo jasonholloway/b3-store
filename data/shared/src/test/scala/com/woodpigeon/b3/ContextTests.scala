@@ -5,30 +5,16 @@ import org.scalatest.AsyncFreeSpec
 
 import scala.concurrent.Future
 import Behaviours._
+import cats.data.OptionT
+import cats.implicits._
 
 import scala.util.Try
 
 class ContextTests extends AsyncFreeSpec {
 
-
-  case class DummyView(updates: List[Any] = List())
-
-  sealed trait Dummy extends Entity { type Key = String; type View = DummyView }
-
-  object Dummy {
-    implicit val dummyBehaviour = new Behaviour[Dummy] {
-      def name(key: String): String = s"dummy:$key"
-      def create(key: String): DummyView = DummyView()
-      def update(ac: DummyView, update: Any): Option[DummyView] = Some(ac.copy(updates = update :: ac.updates))
-      def project(sink: Updater, key: String, before: DummyView, after: DummyView, update: Any): Future[_] = Future()
-    }
-  }
-
-
-
-
-
   "On viewing" - {
+    import Dummy.dummyBehaviour
+
     val store = new FakeStore()
     store("dummy:A").append(
       LogSpan(0, List[RawUpdate](AddNote("Hello"), AddNote("Jason")))
@@ -38,9 +24,8 @@ class ContextTests extends AsyncFreeSpec {
 
     "events read from source" in {
       x.view(Ref[Dummy]("A"))
-        .map(v =>
-          assert(v.updates == List(AddNote("Hello"), AddNote("Jason")))
-        )
+        .map { v => assert(v.updates == Vector(AddNote("Hello"), AddNote("Jason"))) }
+        .getOrElse(fail)
     }
 
   }
@@ -55,24 +40,42 @@ class ContextTests extends AsyncFreeSpec {
 
     "update is immediately available" in {
       x.view(ref)
-        .map(v => assert(v.name == "Lovely mittens"))
+        .map { v => assert(v.name == "Lovely mittens") }
+        .getOrElse(fail)
     }
 
     "projections are immediately available" in {
       x.view(Ref.allProducts)
-        .map(v => assert(SKU(v.skus.head) == ref.name))
+        .map { v => assert(SKU(v.skus.head) == ref.name) }
+        .getOrElse(fail)
     }
 
   }
-
-
-  class FakeStore extends LogCache with LogSource with LogSink {
-    def read(logName: String, offset: Int): Future[LogSpan] =
-      Future(this(logName).read())
-
-    def append(logName: String, updates: LogSpan): Try[Int] = ???
-
-    def commit(): Future[Unit] = ???
-  }
-
 }
+
+
+import scala.concurrent.ExecutionContext.Implicits.global
+
+class FakeStore extends LogCache with LogSource with LogSink {
+  def read(logName: String, offset: Int): OptionT[Future, LogSpan] =
+    OptionT(Future(this(logName).read()))
+
+  def append(logName: String, updates: LogSpan): Try[Int] = ???
+
+  def commit(): Future[Unit] = ???
+}
+
+
+sealed trait Dummy extends Entity { type Key = String; type View = DummyView }
+
+case class DummyView(updates: Vector[Any] = Vector())
+
+object Dummy {
+  implicit val dummyBehaviour : Behaviour[Dummy] = new Behaviour[Dummy] {
+    def name(key: String): String = s"dummy:$key"
+    def create(key: String): DummyView = DummyView()
+    def update(ac: DummyView, update: Any): Option[DummyView] = Some(ac.copy(updates = ac.updates :+ update))
+    def project(sink: Updater, key: String, before: DummyView, after: DummyView, update: Any): Future[_] = Future()
+  }
+}
+

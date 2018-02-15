@@ -1,12 +1,14 @@
 package com.woodpigeon.b3
 
+import cats.data._
+import cats.implicits._
 import com.woodpigeon.b3.schema.v100._
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class Fons(logSource: LogSource) {
 
-  def view[E <: Entity](ref: Ref[E])(implicit handler: Behaviour[E]) : Future[E#View] =
+  def view[E <: Entity](ref: Ref[E])(implicit handler: Behaviour[E]) : OptionT[Future, E#View] =
     loadEvents(handler.name(ref.name))
       .map { aggregate(ref.name, _) }
 
@@ -19,11 +21,10 @@ class Fons(logSource: LogSource) {
       }
 
 
-  private def loadEvents(ref: String) : Future[Seq[Event]] =
+  private def loadEvents(ref: String) : OptionT[Future, List[Event]] =
     logSource.read(ref, 0)
-      .map(_.events.map(_.asEvent()))
+        .map(_.events.map(_.asEvent()))
 
-  //so the Fons should take the log, the Context, etc
 
 }
 

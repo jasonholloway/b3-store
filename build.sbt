@@ -73,8 +73,9 @@ lazy val data = (crossProject in file("data"))
 
 val dataDependencies = jvmDependencies ++ Seq(
   "org.scala-lang.modules" %% "scala-async" % "0.9.6",
-  "org.typelevel" %% "cats-core" % "1.0.0-RC1",
-  "org.typelevel" %% "alleycats-core" % "1.0.0-RC1"
+  "org.typelevel" %% "cats-core" % "1.0.1",
+  "org.typelevel" %% "cats-kernel" % "1.0.1",
+  "org.typelevel" %% "alleycats-core" % "1.0.1"
 )
 
 lazy val dataJVM = data.jvm

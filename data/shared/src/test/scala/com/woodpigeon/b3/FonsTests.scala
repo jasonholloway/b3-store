@@ -1,20 +1,20 @@
 package com.woodpigeon.b3
 
+import cats.data.OptionT
 import com.woodpigeon.b3.Behaviours._
 import com.woodpigeon.b3.RawUpdate._
 import com.woodpigeon.b3.schema.v100._
 import org.scalatest.AsyncFreeSpec
+import cats.implicits._
 
 import scala.concurrent.Future
 import scala.language.implicitConversions
 
 
-
-
 class FonsTests extends AsyncFreeSpec {
 
   val logSource = new LogSource {
-    def read(logName: String, offset: Int): Future[LogSpan] = ???
+    def read(logName: String, offset: Int): OptionT[Future, LogSpan] = ???
   }
 
 
@@ -38,6 +38,7 @@ class FonsTests extends AsyncFreeSpec {
               assert(v.sku == "FLUFFY1")
               assert(v.name == "Fluffy socks")
             })
+            .getOrElse(fail)
       }
     }
   }
@@ -55,6 +56,7 @@ class FonsTests extends AsyncFreeSpec {
             .map(view => {
               assert(view.skus.lengthCompare(2) == 0)
             })
+            .getOrElse(fail)
       }
 
     }
@@ -76,6 +78,7 @@ class FonsTests extends AsyncFreeSpec {
         .map(productSet => {
           assert(productSet.skus == Seq("p123", "p456"))
         })
+        .getOrElse(fail)
   }
 
 }

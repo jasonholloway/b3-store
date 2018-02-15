@@ -1,5 +1,7 @@
 package com.woodpigeon.b3
 
+import cats.Semigroup
+
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
@@ -14,6 +16,16 @@ class LogCache {
 
 case class LogSpan(start: Int, events: List[RawUpdate]) {
   val end: Int = start + events.length
+
+  def ++(other: LogSpan): Try[LogSpan] =
+    if(other.start == end) Success(LogSpan(start, events ++ other.events))
+    else Failure(new Error("Can't join mismatched LogSpans"))
+
+  implicit class RichLogSpanOption(span: Option[LogSpan]) {
+    def +++(other: Option[LogSpan]) = ???
+  }
+
+
 }
 
 
@@ -32,7 +44,7 @@ class Log {
     }
   }
 
-  def read() : LogSpan = updates.getOrElse(LogSpan(0, List()))
+  def read() : Option[LogSpan] = updates
 
   def clear(): Unit = updates = None
 }

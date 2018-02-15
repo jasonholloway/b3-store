@@ -1,5 +1,6 @@
 package com.woodpigeon.b3
 
+import cats.data.OptionT
 import com.woodpigeon.b3.schema.v100._
 
 import scala.collection.mutable
@@ -14,7 +15,7 @@ trait EventLog {
 
 
 trait LogSource {
-  def read(logName: String, offset: Int): Future[LogSpan]
+  def read(logName: String, offset: Int): OptionT[Future, LogSpan]
 }
 
 trait LogSink {

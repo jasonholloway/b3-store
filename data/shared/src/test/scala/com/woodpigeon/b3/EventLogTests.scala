@@ -20,7 +20,7 @@ class LogCacheTests extends FreeSpec {
 
       cache("log1").append(LogSpan(0, updates))
 
-      val returned = cache("log1").read()
+      val returned = cache("log1").read().get
       assert(returned.start == 0)
       assert(returned.events(0) == updates(0))
       assert(returned.events(1) == updates(1))
@@ -35,7 +35,7 @@ class LogCacheTests extends FreeSpec {
     }
 
     "returns empty LogSpan as default" in {
-      val result = cache("giraffe").read()
+      val result = cache("giraffe").read().get
       assert(result.start == 0)
       assert(result.end == 0)
     }
