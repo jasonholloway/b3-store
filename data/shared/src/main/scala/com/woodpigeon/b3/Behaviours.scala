@@ -33,8 +33,8 @@ object Behaviours {
 
     def update(curr: ProductView, update: Any): Option[ProductView] = {
       update match {
-        case PutProductDetails(name, price) => Some(curr.withName(name)
-                                                        .withPrice(price))
+        case PutProductDetails(name, price) => 
+          Some(curr.withName(name).withPrice(price))
         case _ => None
       }
     }

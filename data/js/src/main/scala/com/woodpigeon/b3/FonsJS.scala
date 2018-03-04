@@ -8,15 +8,15 @@ import scala.scalajs.js.JSConverters._
 import scala.async.Async.{async, await}
 import scala.scalajs.js
 
-@JSExportTopLevel("Fons")
-@JSExportAll
-class FonsJS(log: EventLog) {
+// //@JSExportTopLevel("Fons")
+// @JSExportAll
+// class FonsJS(log: EventLog) {
 
-  val inner = new Fons(log)
+//   val inner = new Fons(log)
 
-  def view(streamRef: String, aggrType: String) : Promise[Int8Array] = async {
-    val message = await { inner.view(streamRef, aggrType) }
-    message.toByteArray.toTypedArray
-  }.toJSPromise
+//   def view(streamRef: String, aggrType: String) : Promise[Int8Array] = async {
+//     val message = await { inner.view(streamRef, aggrType) }
+//     message.toByteArray.toTypedArray
+//   }.toJSPromise
 
-}
+//}

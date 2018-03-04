@@ -6,11 +6,17 @@ import com.woodpigeon.b3.schema.v100._
 import org.scalatest.{AsyncFreeSpec, FreeSpec}
 import scala.async.Async.{async, await}
 import scala.language.implicitConversions
+import EventSpan._
+import scala.util.Failure
 
 class LogCacheTests extends FreeSpec {
 
-  private def newUpdates(words: String*): List[RawUpdate] =
-    words.map(w => RawUpdate.convert(AddNote(w))).toList
+  implicit class RichEvent(event: Event) {
+    def is(update: RawUpdate) = event == update.asEvent
+  }
+
+  private def newUpdates(words: String*): Seq[RawUpdate] =
+    words.map(w => RawUpdate.convert(AddNote(w)))
 
   "LogCache" - {
     val cache = new LogCache()
@@ -18,26 +24,32 @@ class LogCacheTests extends FreeSpec {
     "stores and regurgitates updates" in {
       val updates = newUpdates("Hello", "Jason!")
 
-      cache("log1").append(LogSpan(0, updates))
+      cache("log1").append(EventSpan(updates:_*))
 
-      val returned = cache("log1").read().get
-      assert(returned.start == 0)
-      assert(returned.events(0) == updates(0))
-      assert(returned.events(1) == updates(1))
+      cache("log1").read() match {
+        case Full(start, events) => {
+            assert(start == 0)
+            assert(events(0) is updates(0))
+            assert(events(1) is updates(1))
+        }
+        case _ => fail
+      }
     }
 
     "refuses to append if offset doesn't match" in {
-      cache("log1").append(LogSpan(0, List(AddNote("Blahhh"))))
+      cache("log1").append(EventSpan(start = 0, AddNote("Blahhh")))
 
-      val result = cache("log1").append(LogSpan(10, List(AddNote("Wibble"))))
-
-      assert(result.isFailure)
+      cache("log1").append(EventSpan(start = 10, AddNote("Wibble"))) match {
+        case Failure(_) => succeed
+        case _ => fail
+      }
     }
 
-    "returns empty LogSpan as default" in {
-      val result = cache("giraffe").read().get
-      assert(result.start == 0)
-      assert(result.end == 0)
+    "returns Empty as default" in {
+      cache("giraffe").read() match {
+        case Empty() => succeed
+        case _ => fail
+      }
     }
 
   }

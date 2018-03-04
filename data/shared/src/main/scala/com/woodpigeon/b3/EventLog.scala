@@ -1,10 +1,9 @@
 package com.woodpigeon.b3
 
-import cats.data.OptionT
 import com.woodpigeon.b3.schema.v100._
 
-import scala.collection.mutable
 import scala.concurrent.Future
+import EventSpan._
 import scala.util.Try
 
 trait EventLog {
@@ -15,11 +14,11 @@ trait EventLog {
 
 
 trait LogSource {
-  def read(logName: String, offset: Int): OptionT[Future, LogSpan]
+  def read(logName: String, offset: Int): Future[EventSpan]
 }
 
 trait LogSink {
-  def append(logName: String, updates: LogSpan): Try[Int]
+  def append(logName: String, updates: EventSpan): Try[Int]
   def commit(): Future[Unit]
 }
 

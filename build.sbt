@@ -10,10 +10,11 @@ lazy val packageNpm = taskKey[File]("pack into NPM package")
 
 
 lazy val b3 = (project in file("."))
+  .settings(commonSettings)
   .aggregate(schemaJVM, schemaJS, dataJVM, dataJS)
 
 
-val jsSettings = Seq(
+val jsSettings = commonSettings ++ Seq(
   target := target.value / "js",
   scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
   skip in packageJSDependencies := false,
@@ -79,7 +80,7 @@ val dataDependencies = jvmDependencies ++ Seq(
 )
 
 lazy val dataJVM = data.jvm
-    .settings(
+    .settings(commonSettings,
       libraryDependencies ++= dataDependencies
     )
     .dependsOn(schema.jvm, dataShared)
@@ -98,7 +99,7 @@ lazy val dataJS = data.js
 
 
 lazy val dataShared = (project in file("data/shared"))
-  .settings(
+  .settings(commonSettings,
     libraryDependencies ++= dataDependencies
   )
   .dependsOn(schema.jvm)

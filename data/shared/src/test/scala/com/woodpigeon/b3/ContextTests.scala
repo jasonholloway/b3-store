@@ -2,12 +2,10 @@ package com.woodpigeon.b3
 
 import com.woodpigeon.b3.schema.v100.{AddNote, PutProductDetails}
 import org.scalatest.AsyncFreeSpec
-
+import scala.async.Async.{async,await}
 import scala.concurrent.Future
 import Behaviours._
-import cats.data.OptionT
-import cats.implicits._
-
+import EventSpan._
 import scala.util.Try
 
 class ContextTests extends AsyncFreeSpec {
@@ -17,15 +15,16 @@ class ContextTests extends AsyncFreeSpec {
 
     val store = new FakeStore()
     store("dummy:A").append(
-      LogSpan(0, List[RawUpdate](AddNote("Hello"), AddNote("Jason")))
+      EventSpan(AddNote("Hello"), AddNote("Jason"))
     )
 
     val x = new Context(store, store)
 
     "events read from source" in {
       x.view(Ref[Dummy]("A"))
-        .map { v => assert(v.updates == Vector(AddNote("Hello"), AddNote("Jason"))) }
-        .getOrElse(fail)
+        .map { v =>
+          assert(v.updates == Vector(AddNote("Hello"), AddNote("Jason")))
+        }
     }
 
   }
@@ -38,29 +37,57 @@ class ContextTests extends AsyncFreeSpec {
     val ref = Ref.product("MITTEN1")
     x.write(ref, PutProductDetails("Lovely mittens", 3.98f))
 
-    "update is immediately available" in {
+    println(store("Product#MITTEN1").read())
+   
+    "update is immediately viewable" in {
       x.view(ref)
         .map { v => assert(v.name == "Lovely mittens") }
-        .getOrElse(fail)
     }
 
     "projections are immediately available" in {
       x.view(Ref.allProducts)
         .map { v => assert(SKU(v.skus.head) == ref.name) }
-        .getOrElse(fail)
+    }
+
+    "before committing" - {
+      "event isn't given to underlying store" in {
+        store("Product#MITTEN1")
+          .read() match {
+            case Empty() => succeed
+            case _ => fail("unexpected events in store before save!")
+          }
+      }
+    }
+
+    "after saving" - async {
+      await { x.save() }
+
+      "event appears in store" in {
+        store("Product#MITTEN1")
+          .read() match {
+            case Full(start, events) =>
+              assert(start == 0)
+              assert(events.length == 1)
+          }
+      }
     }
 
   }
 }
 
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class FakeStore extends LogCache with LogSource with LogSink {
-  def read(logName: String, offset: Int): OptionT[Future, LogSpan] =
-    OptionT(Future(this(logName).read()))
+  def read(logName: String, offset: Int): Future[EventSpan] =
+    Future(this(logName).read())
 
-  def append(logName: String, updates: LogSpan): Try[Int] = ???
+  def append(logName: String, updates: EventSpan): Try[Int] = 
+    this(logName).append(updates)
+      .map { _ => updates match {
+        case full@EventSpan.Full(_, _) => full.end
+        case EventSpan.Empty() => 0
+      }
+    }
 
   def commit(): Future[Unit] = ???
 }
@@ -75,7 +102,7 @@ object Dummy {
     def name(key: String): String = s"dummy:$key"
     def create(key: String): DummyView = DummyView()
     def update(ac: DummyView, update: Any): Option[DummyView] = Some(ac.copy(updates = ac.updates :+ update))
-    def project(sink: Updater, key: String, before: DummyView, after: DummyView, update: Any): Future[_] = Future()
+    def project(sink: Updater, key: String, before: DummyView, after: DummyView, update: Any): Future[_] = Future(())
   }
 }
 

@@ -1,5 +1,5 @@
 package com.woodpigeon.b3
-import com.trueaccord.scalapb.Message
+
 import com.woodpigeon.b3.schema.v100._
 
 import scala.language.implicitConversions
@@ -45,7 +45,7 @@ object RawUpdate {
     def asUpdate: Try[RawUpdate] = ev match {
       case Event(Event.Inner.AddNote(addNote)) => Success(addNote)
       case Event(Event.Inner.PutProduct(putProduct)) => Success(putProduct)
-      case _ => Failure(new MatchError())
+      case _ => Failure(new MatchError("hello!"))
     }
   }
 
