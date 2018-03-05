@@ -40,8 +40,9 @@ val jsSettings = commonSettings ++ Seq(
 
 val jvmDependencies = Seq(
   "org.scala-js" %% "scalajs-stubs" % scalaJSVersion % "provided",
-  "org.scalactic" %% "scalactic" % "3.0.1",
-  "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+  "org.scalactic" %% "scalactic" % "3.0.3",
+  "org.scalatest" %% "scalatest" % "3.0.3" % "test",
+  "org.typelevel" %% "discipline" % "0.8" % "test"
 )
 
 
@@ -76,6 +77,7 @@ val dataDependencies = jvmDependencies ++ Seq(
   "org.scala-lang.modules" %% "scala-async" % "0.9.6",
   "org.typelevel" %% "cats-core" % "1.0.1",
   "org.typelevel" %% "cats-kernel" % "1.0.1",
+  "org.typelevel" %% "cats-laws" % "1.0.1",
   "org.typelevel" %% "alleycats-core" % "1.0.1"
 )
 
