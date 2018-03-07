@@ -1,7 +1,8 @@
 package com.woodpigeon.b3
 import cats.Monad
+import scala.collection.immutable.SortedMap
 
-case class Ctx[+V](value: V, staged: Map[String, EventSpan] = Map())
+case class Ctx[+V](value: V, staged: SortedMap[String, EventSpan] = SortedMap())
 
 object Ctx {
   implicit def ctxMonad: Monad[Ctx] = new Monad[Ctx] {
