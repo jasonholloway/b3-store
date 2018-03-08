@@ -2,8 +2,8 @@ package com.woodpigeon.b3
 
 import cats.kernel.Eq
 import cats.kernel.laws.discipline.EqTests
-import com.woodpigeon.b3.EventSpan._
-import com.woodpigeon.b3.schema.v100.{ Event, PutProductDetails }
+import com.woodpigeon.b3.EventSpan.{ Full, _ }
+import com.woodpigeon.b3.schema.v100.{ AddNote, Event, PutProductDetails }
 import org.scalacheck.Arbitrary
 import org.scalacheck.rng.Seed
 import org.scalatest.{ FunSuite, Matchers }
@@ -13,6 +13,7 @@ import org.typelevel.discipline.scalatest.Discipline
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
 import scala.collection.immutable.SortedMap
+import com.woodpigeon.b3.RawUpdate
 
 class CtxSpec extends FunSuite with Matchers with Discipline {
 
@@ -26,7 +27,14 @@ class CtxSpec extends FunSuite with Matchers with Discipline {
   checkAll("Eq[Event]", EqTests[Event].eqv)
 
   implicit def arbEvent: Arbitrary[Event] = Arbitrary(
-    PutProductDetails().asInstanceOf[RawUpdate].asInstanceOf[Event]
+    Gen.oneOf[Event](
+      for {
+        name <- Gen.alphaStr
+      } yield RawUpdate.convert(PutProductDetails(name)).asEvent(),
+      for {
+        note <- Gen.alphaStr
+      } yield RawUpdate.convert(AddNote(note)).asEvent()
+    )
   )
 
   implicit def arbCtx[V](implicit arbVal: Arbitrary[V], arbStaging: Arbitrary[SortedMap[String, EventSpan]]): Arbitrary[Ctx[V]] = Arbitrary(
@@ -39,20 +47,22 @@ class CtxSpec extends FunSuite with Matchers with Discipline {
   implicit def eqEventSpan(implicit eqInt: Eq[Int], eqEvs: Eq[List[Event]]): Eq[EventSpan] = new Eq[EventSpan] {
     def eqv(x: EventSpan, y: EventSpan): Boolean = (x, y) match {
       case (Full(s1, e1), Full(s2, e2)) => eqInt.eqv(s1, s2) && eqEvs.eqv(e1, e2)
+      case (Empty(), Empty()) => true
       case _ => false
     }      
   }
 
-  implicit val eqEvent: Eq[Event] = new Eq[Event] {
+  implicit def eqEvent: Eq[Event] = new Eq[Event] {
     def eqv(a: Event, b: Event): Boolean = a.equals(b)
   }
 
-  implicit def arbEventSpan: Arbitrary[EventSpan] = Arbitrary(
+  implicit def arbEventSpan(implicit arbEvent: Arbitrary[Event]): Arbitrary[EventSpan] = Arbitrary(
     Gen.oneOf[EventSpan](
       EventSpan.Empty(), 
       for {
         start <- Gen.posNum[Int]
-      } yield EventSpan.Full(start, List())
+        events <- Gen.listOf(arbEvent.arbitrary)
+      } yield EventSpan.Full(start, events)
     )
   )
 
