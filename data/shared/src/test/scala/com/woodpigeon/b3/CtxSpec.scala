@@ -38,10 +38,15 @@ class CtxSpec extends FunSuite with Matchers with Discipline {
   )
 
   implicit def arbCtx[V](implicit arbVal: Arbitrary[V], arbStaging: Arbitrary[SortedMap[String, EventSpan]]): Arbitrary[Ctx[V]] = Arbitrary(
-    for {
-      v <- arbVal.arbitrary
-      staging <- arbStaging.arbitrary
-    } yield Ctx(v, staging)
+    Gen.frequency[Ctx[V]](
+      (7, for {
+        v <- arbVal.arbitrary
+        staging <- arbStaging.arbitrary
+      } yield CtxVal(v, staging)),
+      (1, for {
+        errorText <- Gen.alphaStr
+      } yield CtxErr(new Error(errorText)))
+    )
   )
 
   implicit def eqEventSpan(implicit eqInt: Eq[Int], eqEvs: Eq[List[Event]]): Eq[EventSpan] = new Eq[EventSpan] {
