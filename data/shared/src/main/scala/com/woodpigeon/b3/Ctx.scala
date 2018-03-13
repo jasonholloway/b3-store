@@ -1,4 +1,5 @@
 package com.woodpigeon.b3
+import cats.kernel.Monoid
 import cats.{ Monad, Traverse }
 import scala.annotation.tailrec
 import scala.collection.immutable.SortedMap
@@ -17,21 +18,20 @@ case class CtxErr[+V](err: Throwable) extends Ctx[V]
 
 object Ctx {
   type Staging = SortedMap[String, EventSpan]
+  type StagingCombo = Try[Staging]
 
   implicit def ctxMonad: Monad[Ctx] = new Monad[Ctx] {
+
     def pure[V](v: V): Ctx[V] = CtxVal(v)
 
     def flatMap[A, B](ctx: Ctx[A])(fn: A => Ctx[B]): Ctx[B] =
       ctx match {
         case CtxErr(err) => CtxErr(err)
-        case CtxVal(v1, staging1) =>
+        case CtxVal(v1, s1) =>
           fn(v1) match {
             case CtxErr(err) => CtxErr(err)
-            case CtxVal(v2, staging2) => {
-              val combined = staging1.mapValues(Try(_)) |+| staging2.mapValues(Try(_))
-              val sequenced = combined.sequence[Try, EventSpan]
-
-              sequenced match {
+            case CtxVal(v2, s2) => {
+              Try(s1) |+| Try(s2) match {
                 case Success(s) => CtxVal(v2, s)
                 case Failure(e) => CtxErr(e)
               }
@@ -40,22 +40,32 @@ object Ctx {
       }
 
     def tailRecM[A, B](a: A)(f: A => Ctx[Either[A, B]]): Ctx[B] = {
-      // @tailrec
-      // def loop(inp: Ctx[Either[A, B]], stagings: List[Staging]): Ctx[B] = inp match {
-      //   case CtxVal(Right(v), staging) => CtxVal(v, (staging :: stagings).combineAll)
-      //   case CtxVal(Left(v), staging) => {
-      //     val combinedStagings = staging :: stagings //this could return failure - should match against it
-      //     loop(f(v), combinedStagings)
-      //   }
-      // }
+      @tailrec
+      def loop(inp: Ctx[Either[A, B]], stagingCombos: List[StagingCombo]): Ctx[B] = inp match {
+        case CtxVal(Right(v), staging) => {
+          val combo = implicitly[Monoid[StagingCombo]].combineAll(Try(staging) :: stagingCombos)
+          combo match {
+            case Success(s) => CtxVal(v, s)
+            case Failure(e) => CtxErr(e)
+          }
+        }
+        case CtxVal(Left(v), staging) => {
+          loop(f(v), Try(staging) :: stagingCombos)
+        }
+      }
 
-      // loop(f(a), Nil)
-      ???
+      loop(f(a), Nil)
     }
   }
-}
 
-//the Try of the EventSpan compositions should be sucked up into the Ctx monad
-//a Ctx monad can therefore have another state: one of error.
-//more things will be packed into the Ctx, to absolve our code of its gnarly sins
+    implicit def stagingComboMonoid: Monoid[StagingCombo] = new Monoid[StagingCombo] {
+        def empty: StagingCombo = Success(SortedMap())
+        def combine(a: StagingCombo, b: StagingCombo): StagingCombo = (a, b) match {
+          case (Success(s1), Success(s2)) =>
+            (s1.mapValues(Try(_)) |+| s2.mapValues(Try(_))).sequence[Try, EventSpan]
+          case (e@Failure(_), _) => e
+          case (_, e@Failure(_)) => e
+        }
+    }
+}
 

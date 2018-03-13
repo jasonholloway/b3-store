@@ -1,11 +1,10 @@
 package com.woodpigeon.b3
 
 import cats.kernel.Eq
-import cats.kernel.laws.discipline.EqTests
+import cats.kernel.laws.discipline.{ EqTests, MonoidTests }
 import com.woodpigeon.b3.EventSpan.{ Full, _ }
 import com.woodpigeon.b3.schema.v100.{ AddNote, Event, PutProductDetails }
 import org.scalacheck.Arbitrary
-import org.scalacheck.rng.Seed
 import org.scalatest.{ FunSuite, Matchers }
 import cats.laws.discipline._
 import cats.implicits._
@@ -13,18 +12,22 @@ import org.typelevel.discipline.scalatest.Discipline
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
 import scala.collection.immutable.SortedMap
-import com.woodpigeon.b3.RawUpdate
+import scala.util.Try
+import Ctx._
 
 class CtxSpec extends FunSuite with Matchers with Discipline {
 
-
-  checkAll("Monad[Ctx]", MonadTests[Ctx].monad[Int, Int, Int])
 
   checkAll("Eq[Ctx[Int]]", EqTests[Ctx[Int]].eqv)
 
   checkAll("Eq[EventSpan]", EqTests[EventSpan].eqv)
 
   checkAll("Eq[Event]", EqTests[Event].eqv)
+
+  checkAll("Monoid[Try[Staging]]", MonoidTests[Try[Staging]].monoid)
+  
+  checkAll("Monad[Ctx]", MonadTests[Ctx].monad[Int, Int, Int])
+
 
   implicit def arbEvent: Arbitrary[Event] = Arbitrary(
     Gen.oneOf[Event](
@@ -45,7 +48,7 @@ class CtxSpec extends FunSuite with Matchers with Discipline {
       } yield CtxVal(v, staging)),
       (1, for {
         errorText <- Gen.alphaStr
-      } yield CtxErr(new Error(errorText)))
+      } yield CtxErr(new Throwable(errorText)))
     )
   )
 
@@ -63,17 +66,21 @@ class CtxSpec extends FunSuite with Matchers with Discipline {
 
   implicit def arbEventSpan(implicit arbEvent: Arbitrary[Event]): Arbitrary[EventSpan] = Arbitrary(
     Gen.oneOf[EventSpan](
-      EventSpan.Empty(), 
+      Empty(), 
       for {
         start <- Gen.posNum[Int]
         events <- Gen.listOf(arbEvent.arbitrary)
-      } yield EventSpan.Full(start, events)
+      } yield Full(start, events)
     )
   )
 
-  implicit def eqCtxV[V](implicit eqV: Eq[V], eqStaging: Eq[SortedMap[String, EventSpan]]): Eq[Ctx[V]] = new Eq[Ctx[V]] {
+  implicit def eqThrowable: Eq[Throwable] = Eq.by[Throwable, String](_.toString)
+
+  implicit def eqCtxV[V](implicit eqV: Eq[V], eqStaging: Eq[SortedMap[String, EventSpan]], eqThrowable: Eq[Throwable]): Eq[Ctx[V]] = new Eq[Ctx[V]] {
     def eqv(a: Ctx[V], b: Ctx[V]): Boolean = (a, b) match {
-      case (Ctx(v1, s1), Ctx(v2, s2)) => eqV.eqv(v1, v2) && eqStaging.eqv(s1, s2)
+      case (CtxVal(v1, s1), CtxVal(v2, s2)) => eqV.eqv(v1, v2) && eqStaging.eqv(s1, s2)
+      case (CtxErr(e1), CtxErr(e2)) => eqThrowable.eqv(e1, e2)
+      case _ => false
     }
   }
 
