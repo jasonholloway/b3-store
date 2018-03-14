@@ -12,6 +12,8 @@ object Ref {
 }
 
 
-
+sealed trait Loaded[E <: Entity] extends Ref[E] {
+  def view: E#View = ???
+}
 
 

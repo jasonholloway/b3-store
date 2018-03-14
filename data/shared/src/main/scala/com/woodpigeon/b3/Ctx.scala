@@ -1,8 +1,10 @@
 package com.woodpigeon.b3
 import cats.kernel.Monoid
 import cats.Monad
+import com.woodpigeon.b3.{ Entity, Product }
 import scala.annotation.tailrec
 import scala.collection.immutable.SortedMap
+import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import EventSpan._
 import cats.syntax.monoid._
@@ -10,6 +12,7 @@ import cats.instances.string._
 import cats.instances.sortedMap._
 import cats.instances.try_._
 import cats.syntax.traverse._
+import scala.language.higherKinds
 
 sealed trait Ctx[+V]
 case class CtxVal[+V](value: V, staged: SortedMap[String, EventSpan] = SortedMap()) extends Ctx[V]
@@ -19,6 +22,8 @@ case class CtxErr[+V](err: Throwable) extends Ctx[V]
 object Ctx {
   type Staging = SortedMap[String, EventSpan]
   type StagingCombo = Try[Staging]
+
+  def apply(): Ctx[Unit] = CtxVal(Unit)
 
   implicit def ctxMonad: Monad[Ctx] = new Monad[Ctx] {
     def pure[V](v: V): Ctx[V] = CtxVal(v)
@@ -64,5 +69,19 @@ object Ctx {
       case (_, e@Failure(_)) => e
     }
   }
+
+  implicit class RefActions[E <: Entity](ref: Ref[E]) {
+    def load: Ctx[Loaded[E]] = ???
+    def append(update: RawUpdate): Ctx[Loaded[E]] = ???
+  }
+
+  implicit class RichCtx[V](ctx: Ctx[V]) {
+    def runAs[F[_] : CtxRunner](store: Any)(implicit runner: CtxRunner[F]): F[V] 
+      = runner.run(ctx, store)
+  }
+}
+
+trait CtxRunner[F[_]] {
+  def run[V](ctx: Ctx[V], store: Any): F[V] 
 }
 

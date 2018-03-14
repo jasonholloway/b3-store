@@ -6,25 +6,40 @@ import scala.async.Async.{async,await}
 import scala.concurrent.Future
 import Behaviours._
 import EventSpan._
+import Ctx._
 import scala.util.Try
+import cats.implicits._
 
 class ContextTests extends AsyncFreeSpec {
 
+  def loadDummy(name: String): Ctx[Loaded[Dummy]] = Ref[Dummy](name).load
+
+  implicit def ctxRunner = new CtxRunner[Future] {
+    def run[V](ctx: Ctx[V], store: Any): Future[V] = ctx match {
+      case CtxErr(e) => Future.failed(e)
+      case CtxVal(v, s) => {
+        //so, we'd commit to staging here...
+        //but loading itself has to be done, and all functions executed
+        //so, the combining, the flat-mapping of previous stages, all has to be done in order
+        //as we flat map, we should then be storing up continuations - these are the real things to be accumulated
+        //not SortedMaps!!! 
+        Future(v)
+      }
+    }
+  }
+
+
   "On viewing" - {
-    import Dummy.dummyBehaviour
 
     val store = new FakeStore()
     store("dummy:A").append(
       EventSpan(AddNote("Hello"), AddNote("Jason"))
     )
 
-    val x = new Context(store, store)
-
     "events read from source" in {
-      x.view(Ref[Dummy]("A"))
-        .map { v =>
-          assert(v.updates == Vector(AddNote("Hello"), AddNote("Jason")))
-        }
+      loadDummy("A")
+        .map(e => assert(e.view.updates == Vector(AddNote("Hello"), AddNote("Jason")))) 
+        .runAs[Future](store)
     }
 
   }
