@@ -24,7 +24,7 @@ object EventSpan {
 
 
   implicit class RichEventSpan(self: EventSpan) {
-    def append(other: EventSpan): EventSpanComputation = (self, other) match {
+    def append(other: EventSpan): EventSpanCombo = (self, other) match {
       case (a@Full(_, _), b@Full(_, _)) =>
         if(a.end == b.start) Success(Full(a.start, a.events ++ b.events))
         else Failure(MismatchedEventSpans)
@@ -37,11 +37,11 @@ object EventSpan {
   }
 
 
-  type EventSpanComputation = Try[EventSpan]
+  type EventSpanCombo = Try[EventSpan]
 
-  implicit val eventSpanComputationMonoid = new Monoid[EventSpanComputation] {
-    def empty: EventSpanComputation = Success(Empty())
-    def combine(x: EventSpanComputation, y: EventSpanComputation): EventSpanComputation = (x, y) match {
+  implicit val eventSpanCombo = new Monoid[EventSpanCombo] {
+    def empty: EventSpanCombo = Success(Empty())
+    def combine(x: EventSpanCombo, y: EventSpanCombo): EventSpanCombo = (x, y) match {
       case (Success(a), Success(b)) => a append b
       case (f@Failure(_), _) => f
       case (_, f@Failure(_)) => f

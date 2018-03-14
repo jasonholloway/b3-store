@@ -52,6 +52,7 @@ object Ctx {
         case CtxVal(Left(v), staging) => {
           loop(f(v), Try(staging) :: stagingCombos)
         }
+        case CtxErr(e) => CtxErr(e)
       }
 
       loop(f(a), Nil)
