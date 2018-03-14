@@ -1,6 +1,6 @@
 package com.woodpigeon.b3
 import cats.kernel.Monoid
-import cats.{ Monad, Traverse }
+import cats.Monad
 import scala.annotation.tailrec
 import scala.collection.immutable.SortedMap
 import scala.util.{ Failure, Success, Try }
@@ -21,9 +21,7 @@ object Ctx {
   type StagingCombo = Try[Staging]
 
   implicit def ctxMonad: Monad[Ctx] = new Monad[Ctx] {
-
     def pure[V](v: V): Ctx[V] = CtxVal(v)
-
     def flatMap[A, B](ctx: Ctx[A])(fn: A => Ctx[B]): Ctx[B] =
       ctx match {
         case CtxErr(err) => CtxErr(err)
@@ -41,32 +39,30 @@ object Ctx {
 
     def tailRecM[A, B](a: A)(f: A => Ctx[Either[A, B]]): Ctx[B] = {
       @tailrec
-      def loop(inp: Ctx[Either[A, B]], stagingCombos: List[StagingCombo]): Ctx[B] = inp match {
-        case CtxVal(Right(v), staging) => {
-          val combo = implicitly[Monoid[StagingCombo]].combineAll(Try(staging) :: stagingCombos)
-          combo match {
+      def loop(inp: Ctx[Either[A, B]], stagingCombo: StagingCombo): Ctx[B] = inp match {
+        case CtxVal(Right(v), staging) => 
+          Try(staging) |+| stagingCombo match {
             case Success(s) => CtxVal(v, s)
             case Failure(e) => CtxErr(e)
           }
-        }
         case CtxVal(Left(v), staging) => {
-          loop(f(v), Try(staging) :: stagingCombos)
+          loop(f(v), Try(staging) |+| stagingCombo)
         }
         case CtxErr(e) => CtxErr(e)
       }
 
-      loop(f(a), Nil)
+      loop(f(a), Success(SortedMap()))
     }
   }
 
-    implicit def stagingComboMonoid: Monoid[StagingCombo] = new Monoid[StagingCombo] {
-        def empty: StagingCombo = Success(SortedMap())
-        def combine(a: StagingCombo, b: StagingCombo): StagingCombo = (a, b) match {
-          case (Success(s1), Success(s2)) =>
-            (s1.mapValues(Try(_)) |+| s2.mapValues(Try(_))).sequence[Try, EventSpan]
-          case (e@Failure(_), _) => e
-          case (_, e@Failure(_)) => e
-        }
+  implicit def stagingComboMonoid: Monoid[StagingCombo] = new Monoid[StagingCombo] {
+    def empty: StagingCombo = Success(SortedMap())
+    def combine(a: StagingCombo, b: StagingCombo): StagingCombo = (a, b) match {
+      case (Success(s1), Success(s2)) =>
+        (s1.mapValues(Try(_)) |+| s2.mapValues(Try(_))).sequence[Try, EventSpan]
+      case (e@Failure(_), _) => e
+      case (_, e@Failure(_)) => e
     }
+  }
 }
 
