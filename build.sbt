@@ -1,9 +1,12 @@
 import sbt.Keys.mainClass
 
+
 val commonSettings = Seq(
   organization := "com.woodpigeon",
   scalaVersion := "2.12.2",
-  scalacOptions += "-Ypartial-unification"
+  scalacOptions ++= Seq("-Ypartial-unification", "-language:higherKinds"),
+  autoCompilerPlugins := true,
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6")
 )
 
 lazy val packageNpm = taskKey[File]("pack into NPM package")
@@ -78,6 +81,7 @@ val dataDependencies = jvmDependencies ++ Seq(
   "org.typelevel" %% "cats-core" % "1.0.1",
   "org.typelevel" %% "cats-kernel" % "1.0.1",
   "org.typelevel" %% "cats-laws" % "1.0.1",
+  "org.typelevel" %% "cats-free" % "1.0.1",
   "org.typelevel" %% "alleycats-core" % "1.0.1"
 )
 
