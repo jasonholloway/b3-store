@@ -14,50 +14,45 @@ import cats.instances.try_._
 import cats.syntax.traverse._
 import scala.language.higherKinds
 
-sealed trait Ctx[+V]
-case class CtxVal[+V](value: V, staged: SortedMap[String, EventSpan] = SortedMap()) extends Ctx[V]
-case class CtxErr[+V](err: Throwable) extends Ctx[V]
-
+import Ctx._
+case class Ctx[+V](fn: () => Try[(V, Staging)])
 
 object Ctx {
   type Staging = SortedMap[String, EventSpan]
   type StagingCombo = Try[Staging]
 
-  def apply(): Ctx[Unit] = CtxVal(Unit)
+  def apply[V](v: V): Ctx[V] = Ctx(() => Try((v, SortedMap())))
 
   implicit def ctxMonad: Monad[Ctx] = new Monad[Ctx] {
-    def pure[V](v: V): Ctx[V] = CtxVal(v)
-    def flatMap[A, B](ctx: Ctx[A])(fn: A => Ctx[B]): Ctx[B] =
+
+    def pure[V](v: V): Ctx[V] = Ctx(v)
+
+    def flatMap[A, B](ctx: Ctx[A])(fn: A => Ctx[B]): Ctx[B] = 
       ctx match {
-        case CtxErr(err) => CtxErr(err)
-        case CtxVal(v1, s1) =>
-          fn(v1) match {
-            case CtxErr(err) => CtxErr(err)
-            case CtxVal(v2, s2) => {
-              Try(s1) |+| Try(s2) match {
-                case Success(s) => CtxVal(v2, s)
-                case Failure(e) => CtxErr(e)
-              }
+        case Ctx(fnPrev) => Ctx(() => fnPrev() match {
+          case Success((v1, s1)) => fn(v1) match {
+            case Ctx(fnNext) => fnNext() match {
+              case Success((v2, s2)) =>
+                Try(s1) |+| Try(s2) match {
+                  case Success(s) => Success((v2, s))
+                  case Failure(e) => Failure(e)
+                }
+              case Failure(e2) => Failure(e2)
             }
           }
+          case Failure(e1) => Failure(e1)
+        })
       }
 
-    def tailRecM[A, B](a: A)(f: A => Ctx[Either[A, B]]): Ctx[B] = {
-      @tailrec
-      def loop(inp: Ctx[Either[A, B]], stagingCombo: StagingCombo): Ctx[B] = inp match {
-        case CtxVal(Right(v), staging) => 
-          Try(staging) |+| stagingCombo match {
-            case Success(s) => CtxVal(v, s)
-            case Failure(e) => CtxErr(e)
-          }
-        case CtxVal(Left(v), staging) => {
-          loop(f(v), Try(staging) |+| stagingCombo)
+    def tailRecM[A, B](a: A)(f: A => Ctx[Either[A, B]]): Ctx[B] =
+      Ctx(() => {
+        // @tailrec
+        def loop(inp: Ctx[Either[A, B]], stagingCombo: StagingCombo): Try[(B, Staging)] = inp match {
+          case Ctx(fn) => ???
         }
-        case CtxErr(e) => CtxErr(e)
-      }
 
-      loop(f(a), Success(SortedMap()))
-    }
+        loop(f(a), Success(SortedMap()))
+      })
   }
 
   implicit def stagingComboMonoid: Monoid[StagingCombo] = new Monoid[StagingCombo] {

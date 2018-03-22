@@ -12,7 +12,7 @@ import org.typelevel.discipline.scalatest.Discipline
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
 import scala.collection.immutable.SortedMap
-import scala.util.Try
+import scala.util.{ Failure, Success, Try }
 import Ctx._
 
 class CtxSpec extends FunSuite with Matchers with Discipline {
@@ -45,10 +45,10 @@ class CtxSpec extends FunSuite with Matchers with Discipline {
       (7, for {
         v <- arbVal.arbitrary
         staging <- arbStaging.arbitrary
-      } yield CtxVal(v, staging)),
+      } yield Ctx(() => Success((v, staging)))),
       (1, for {
         errorText <- Gen.alphaStr
-      } yield CtxErr(new Throwable(errorText)))
+      } yield Ctx(() => Failure(new Throwable(errorText))))
     )
   )
 
@@ -76,11 +76,9 @@ class CtxSpec extends FunSuite with Matchers with Discipline {
 
   implicit def eqThrowable: Eq[Throwable] = Eq.by[Throwable, String](_.toString)
 
-  implicit def eqCtxV[V](implicit eqV: Eq[V], eqStaging: Eq[SortedMap[String, EventSpan]], eqThrowable: Eq[Throwable]): Eq[Ctx[V]] = new Eq[Ctx[V]] {
+  implicit def eqCtxV[V](implicit eqFn: Eq[() => Try[(V, Staging)]]): Eq[Ctx[V]] = new Eq[Ctx[V]] {
     def eqv(a: Ctx[V], b: Ctx[V]): Boolean = (a, b) match {
-      case (CtxVal(v1, s1), CtxVal(v2, s2)) => eqV.eqv(v1, v2) && eqStaging.eqv(s1, s2)
-      case (CtxErr(e1), CtxErr(e2)) => eqThrowable.eqv(e1, e2)
-      case _ => false
+      case (Ctx(fn1), Ctx(fn2)) => eqFn.eqv(fn1, fn2)
     }
   }
 

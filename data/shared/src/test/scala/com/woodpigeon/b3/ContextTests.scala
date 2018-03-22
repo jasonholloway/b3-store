@@ -16,15 +16,7 @@ class ContextTests extends AsyncFreeSpec {
 
   implicit def ctxRunner = new CtxRunner[Future] {
     def run[V](ctx: Ctx[V], store: Any): Future[V] = ctx match {
-      case CtxErr(e) => Future.failed(e)
-      case CtxVal(v, s) => {
-        //so, we'd commit to staging here...
-        //but loading itself has to be done, and all functions executed
-        //so, the combining, the flat-mapping of previous stages, all has to be done in order
-        //as we flat map, we should then be storing up continuations - these are the real things to be accumulated
-        //not SortedMaps!!! 
-        Future(v)
-      }
+      case Ctx(fn) => ???
     }
   }
 
