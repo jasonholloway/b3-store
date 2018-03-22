@@ -2,13 +2,28 @@ package com.woodpigeon.b3
 import cats.Monad
 import cats.Id
 import cats.free.Free
+import cats.kernel.Eq
+import cats.laws.discipline.MonadTests
+import cats.laws.discipline._
 import com.woodpigeon.b3.schema.v100.PutProductDetails
+import org.scalacheck.Arbitrary
 import org.scalatest.{FunSuite,Matchers}
+import org.scalacheck.Arbitrary._
+import org.scalacheck._
 import cats.~>
+import org.typelevel.discipline.scalatest.Discipline
 import scala.concurrent.Future
 
-class ActionSpec extends FunSuite with Matchers {
+class ActionSpec extends FunSuite with Matchers with Discipline {
   import Action._
+
+  checkAll("Monad[Transaction[Id, ?]]", MonadTests[Transaction[Id, ?]].monad[Int, Int, Int])
+
+  implicit def arbTransaction[V]: Arbitrary[Transaction[Id, V]] = ???
+
+  implicit def isoDummy: SemigroupalTests.Isomorphisms[Transaction[Id, ?]] = ???
+
+  implicit def eqDummy[V]: Eq[V] = ???
 
   test("flump!") {
     val actions = for {
