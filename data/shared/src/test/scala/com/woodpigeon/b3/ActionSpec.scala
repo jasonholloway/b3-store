@@ -2,55 +2,96 @@ package com.woodpigeon.b3
 import cats.Monad
 import cats.Id
 import cats.free.Free
-import cats.kernel.Eq
+import cats.kernel.{ Eq }
 import cats.laws.discipline.MonadTests
-import cats.laws.discipline._
+import cats.kernel.laws.discipline.EqTests
 import com.woodpigeon.b3.schema.v100.PutProductDetails
-import org.scalacheck.Arbitrary
+import org.scalacheck.Gen
+import org.scalacheck.Gen._
 import org.scalatest.{FunSuite,Matchers}
 import org.scalacheck.Arbitrary._
 import org.scalacheck._
 import cats.~>
 import org.typelevel.discipline.scalatest.Discipline
-import scala.concurrent.Future
+import cats.instances.int._
+import cats.instances.tuple._
 
 class ActionSpec extends FunSuite with Matchers with Discipline {
   import Action._
 
-  checkAll("Monad[Transaction[Id, ?]]", MonadTests[Transaction[Id, ?]].monad[Int, Int, Int])
+  checkAll("Eq[Transaction[FakeStore, Int]]", EqTests[Transaction[FakeStore, Int]].eqv)
 
-  implicit def arbTransaction[V]: Arbitrary[Transaction[Id, V]] = ???
+  checkAll("Monad[Transaction[FakeStore, ?]]", MonadTests[Transaction[FakeStore, ?]].monad[Int, Int, Int])
 
-  implicit def isoDummy: SemigroupalTests.Isomorphisms[Transaction[Id, ?]] = ???
 
-  implicit def eqDummy[V]: Eq[V] = ???
+  implicit def cogenStore: Cogen[FakeStore] = Cogen(_ => 13) //!!!!!!!!
+
+  implicit def arbStore: Arbitrary[FakeStore] = Arbitrary(new FakeStore(Map())) //!!!!!!!!!!!!!!!!!!!!!!1
+
+  implicit def eqStore: Eq[FakeStore] =
+    Eq.instance((s1: FakeStore, s2: FakeStore) => true)
+
+  implicit def eqTransaction[V](implicit eqStore: Eq[FakeStore], eqV: Eq[V]): Eq[Transaction[FakeStore, V]] =
+    Eq.instance((t1: Transaction[FakeStore, V], t2: Transaction[FakeStore, V]) => {
+      Gen.listOfN(500, arbitrary[FakeStore])
+        .map(_.forall(store => {
+          val (store1, v1) = t1(store)
+          val (store2, v2) = t2(store)
+          Eq[FakeStore].eqv(store1, store2) && Eq[V].eqv(v1, v2)
+        }))
+        .sample.getOrElse(false)
+    })
+
+
+  case class FakeStore(logs: Map[String, Any]) extends Store {
+    type Result[V] = Id[V]
+  }
+
 
   test("flump!") {
     val actions = for {
       haggis <- read(Ref.product("HAGGIS"))
-      _ <- update(Ref.product("HAGGIS"), PutProductDetails("Krrumpt"))
-    } yield ()
+      _ <- {
+        update(Ref.product("HAGGIS"), PutProductDetails("Krrumpt"))
+      }
+    } yield haggis.view.name
 
-    val transaction = actions.toTransaction[Id]
+    val transaction = actions.toTransaction[FakeStore]
 
-    val result = transaction(new Store { })
+    val result = transaction(new FakeStore(Map()))
 
     assert(result == true)
   }
 
-  trait Store
-  type Transaction[M[_], V] = Store => M[(Store, V)]
+  trait Store { type Result[_] }
+  type Transaction[S <: Store, V] = S => S#Result[(S, V)]
 
-  implicit def interpret[M[_]]: (Action ~> Transaction[M, ?]) = new (Action ~> Transaction[M, ?]) {
-   def apply[V](action: Action[V]): Transaction[M, V] = ??? 
+  implicit def interpret[S <: Store]: (Action ~> Transaction[S, ?]) = new (Action ~> Transaction[S, ?]) {
+   def apply[V](action: Action[V]): Transaction[S, V] = ??? 
   }
 
   implicit class RichActions[V](actions: Free[Action, V]) {
-    def toTransaction[M[_] : Monad](implicit transform: Action ~> Transaction[M, ?], monad: Monad[Transaction[M, ?]]): Transaction[M, V]
-        = actions.foldMap[Transaction[M, ?]](transform)(monad)
+    def toTransaction[S <: Store](implicit transform: Action ~> Transaction[S, ?], monad: Monad[Transaction[S, ?]]): Transaction[S, V]
+        = actions.foldMap[Transaction[S, ?]](transform)(monad)
   }
 
-  implicit def fakeTransactionMonad: Monad[Transaction[Id, ?]] = ???
-  implicit def realTransactionMonad: Monad[Transaction[Future, ?]] = ???
+  implicit def transactionMonad[S <: Store]: Monad[Transaction[S, ?]] = new Monad[Transaction[S, ?]] {
+    type T[V] = Transaction[S, V]
+
+    def pure[V](v: V): T[V] =
+      (store: S) => S#Result(store, v)
+
+    def flatMap[A, B](a: T[A])(fn: A => T[B]): T[B] = 
+      (store1: S) => {
+        val (store2, v2) = a(store1)
+        val (store3, v3) = fn(v2)(store2)
+        S#Result(store3, v3) //stores should be merged here
+      }
+
+    def tailRecM[A, B](a: A)(f: A => T[Either[A, B]]): T[B] =
+      ???
+  }
+
+  case class LiveStore() extends Store
 }
 
