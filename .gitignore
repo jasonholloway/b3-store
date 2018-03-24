@@ -10,7 +10,6 @@ out
 target
 .ensime_cache
 .classpath
-ensime.sbt
 ~*
 #*#
 .#*

@@ -1,4 +1,4 @@
-scalaVersion := "2.12.2"
+scalaVersion := "2.12.4"
 
 val circeVersion = "0.8.0"
 val awsSdkVersion = "1.11.179"
