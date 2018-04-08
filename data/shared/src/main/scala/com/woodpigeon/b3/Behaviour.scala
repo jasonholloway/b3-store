@@ -9,6 +9,7 @@ trait Behaviour[E <: Entity] {
   def project(sink: Updater, key: E#Key, before: E#View, after: E#View, update: Any): Future[_]
 }
 
+trait Updater
 //so our projection would write to the current Context. But what would happen if the network failed, for instance?
 //The Context would be best as an immutable thing then, only put back to the shared variable on a successful update.
 

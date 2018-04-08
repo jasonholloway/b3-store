@@ -19,7 +19,8 @@ object Behaviours {
     }
 
     def project(x: Updater, key: String, before: ProductSetView, after: ProductSetView, update: Any): Future[_] =
-      Future()
+      ???
+      // Future()
 
   }
 
@@ -40,7 +41,8 @@ object Behaviours {
     }
 
     def project(x: Updater, sku: SKU, before: ProductView, after: ProductView, update: Any): Future[_] =
-      x.write(Ref.allProducts, AnnounceProduct(sku.string))
+      ???
+      // x.write(Ref.allProducts, AnnounceProduct(sku.string)) 
 
   }
 

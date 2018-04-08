@@ -1,19 +1,19 @@
 package com.woodpigeon.b3
 
-import cats.kernel.Eq
-import cats.kernel.laws.discipline.{ EqTests, MonoidTests }
-import com.woodpigeon.b3.EventSpan.{ Full, _ }
-import com.woodpigeon.b3.schema.v100.{ AddNote, Event, PutProductDetails }
-import org.scalacheck.Arbitrary
-import org.scalatest.{ FunSuite, Matchers }
-import cats.laws.discipline._
+import scala.collection.immutable.SortedMap
+import scala.util.{Failure, Success, Try}
+
+import Ctx._
 import cats.implicits._
-import org.typelevel.discipline.scalatest.Discipline
+import cats.kernel.Eq
+import cats.kernel.laws.discipline.{EqTests, MonoidTests}
+import cats.laws.discipline._
+import com.woodpigeon.b3.EventSpan._
+import com.woodpigeon.b3.schema.v100.{AddNote, Event, PutProductDetails}
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
-import scala.collection.immutable.SortedMap
-import scala.util.{ Failure, Success, Try }
-import Ctx._
+import org.scalatest.{FunSuite, Matchers}
+import org.typelevel.discipline.scalatest.Discipline
 
 class CtxSpec extends FunSuite with Matchers with Discipline {
 

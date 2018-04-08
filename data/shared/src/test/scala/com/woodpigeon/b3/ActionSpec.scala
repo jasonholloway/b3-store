@@ -1,97 +1,111 @@
 package com.woodpigeon.b3
-import cats.Monad
-import cats.Id
+
 import cats.free.Free
-import cats.kernel.{ Eq }
-import cats.laws.discipline.MonadTests
+import com.woodpigeon.b3.Behaviour
+import scala.language.implicitConversions
+
+import cats.{~>, Functor}
+import cats.data._
+import cats.kernel.Eq
 import cats.kernel.laws.discipline.EqTests
-import com.woodpigeon.b3.schema.v100.PutProductDetails
-import org.scalacheck.Gen
-import org.scalacheck.Gen._
-import org.scalatest.{FunSuite,Matchers}
-import org.scalacheck.Arbitrary._
+import com.woodpigeon.b3.Transaction._
+import com.woodpigeon.b3.schema.v100.{AddNote, PutProductDetails}
 import org.scalacheck._
-import cats.~>
+import org.scalatest.{FunSuite, Matchers}
 import org.typelevel.discipline.scalatest.Discipline
-import cats.instances.int._
-import cats.instances.tuple._
 
 class ActionSpec extends FunSuite with Matchers with Discipline {
   import Action._
 
-  checkAll("Eq[Transaction[FakeStore, Int]]", EqTests[Transaction[FakeStore, Int]].eqv)
-
-  checkAll("Monad[Transaction[FakeStore, ?]]", MonadTests[Transaction[FakeStore, ?]].monad[Int, Int, Int])
-
-
-  implicit def cogenStore: Cogen[FakeStore] = Cogen(_ => 13) //!!!!!!!!
-
-  implicit def arbStore: Arbitrary[FakeStore] = Arbitrary(new FakeStore(Map())) //!!!!!!!!!!!!!!!!!!!!!!1
-
-  implicit def eqStore: Eq[FakeStore] =
-    Eq.instance((s1: FakeStore, s2: FakeStore) => true)
-
-  implicit def eqTransaction[V](implicit eqStore: Eq[FakeStore], eqV: Eq[V]): Eq[Transaction[FakeStore, V]] =
-    Eq.instance((t1: Transaction[FakeStore, V], t2: Transaction[FakeStore, V]) => {
-      Gen.listOfN(500, arbitrary[FakeStore])
-        .map(_.forall(store => {
-          val (store1, v1) = t1(store)
-          val (store2, v2) = t2(store)
-          Eq[FakeStore].eqv(store1, store2) && Eq[V].eqv(v1, v2)
-        }))
-        .sample.getOrElse(false)
+  val compileToLogActions: Action ~> Free[LogAction, ?] =
+    λ[Action ~> Free[LogAction, ?]]({
+      case Read(ref) => 
+        Free.liftF(LogAction.Read(ref))
+          .map(aggregateView(ref, _))
+      case Update(ref, events) => 
+        Free.liftF(LogAction.Append(ref))
+          .map(aggregateView(ref, _))
     })
 
+  def aggregateView[E <: Entity](ref: Ref[E], log: Log): E#View =
+    log.foldLeft(ref.behaviour.create(ref.name)) {
+      (ac, ev) => ref.behaviour.update(ac, ev).getOrElse(ac)
+    }
 
-  case class FakeStore(logs: Map[String, Any]) extends Store {
-    type Result[V] = Id[V]
-  }
-
-
-  test("flump!") {
-    val actions = for {
-      haggis <- read(Ref.product("HAGGIS"))
-      _ <- {
-        update(Ref.product("HAGGIS"), PutProductDetails("Krrumpt"))
+  implicit def compileTransaction: Action ~> Transaction =
+    λ[Action ~> Transaction]({
+      case Read(ref) => {
+        ???
       }
-    } yield haggis.view.name
-
-    val transaction = actions.toTransaction[FakeStore]
-
-    val result = transaction(new FakeStore(Map()))
-
-    assert(result == true)
-  }
-
-  trait Store { type Result[_] }
-  type Transaction[S <: Store, V] = S => S#Result[(S, V)]
-
-  implicit def interpret[S <: Store]: (Action ~> Transaction[S, ?]) = new (Action ~> Transaction[S, ?]) {
-   def apply[V](action: Action[V]): Transaction[S, V] = ??? 
-  }
-
-  implicit class RichActions[V](actions: Free[Action, V]) {
-    def toTransaction[S <: Store](implicit transform: Action ~> Transaction[S, ?], monad: Monad[Transaction[S, ?]]): Transaction[S, V]
-        = actions.foldMap[Transaction[S, ?]](transform)(monad)
-  }
-
-  implicit def transactionMonad[S <: Store]: Monad[Transaction[S, ?]] = new Monad[Transaction[S, ?]] {
-    type T[V] = Transaction[S, V]
-
-    def pure[V](v: V): T[V] =
-      (store: S) => S#Result(store, v)
-
-    def flatMap[A, B](a: T[A])(fn: A => T[B]): T[B] = 
-      (store1: S) => {
-        val (store2, v2) = a(store1)
-        val (store3, v3) = fn(v2)(store2)
-        S#Result(store3, v3) //stores should be merged here
+      case Update(ref, events) => {
+        ???
       }
+    })
 
-    def tailRecM[A, B](a: A)(f: A => T[Either[A, B]]): T[B] =
-      ???
+  //the below is what we will swap about between test and live
+
+  implicit def executeTransaction: Transaction ~> FakeStore = 
+    λ[Transaction ~> FakeStore]({
+      case Load(name, offset) => ???
+      case Commit(name, events) => ???
+    })
+
+  val actions = for {
+    a <- Action.read(Ref.product("hello"))
+    _ <- Action.update(Ref.product("boo"), PutProductDetails("flimflam", 13.1F))
+  } yield ()
+
+  val transaction = actions.compile[Transaction](compileTransaction)
+  
+  val fakeStoreState = transaction.foldMap(executeTransaction)
+  val again = fakeStoreState
+    .flatMap(_ => transaction.foldMap(executeTransaction))
+
+  import cats.instances.vector._
+  import cats.instances.sortedMap._
+  import cats.instances.string._
+  import org.scalacheck.Arbitrary._
+
+  type FakeStore[V] = State[LogMap, V]
+
+  checkAll("Eq[Log]", EqTests[Log].eqv)
+  checkAll("Eq[LogMap]", EqTests[LogMap].eqv)
+
+  implicit def eqRawUpdate: Eq[RawUpdate] = new Eq[RawUpdate] {
+    def eqv(a: RawUpdate, b: RawUpdate): Boolean = a.equals(b)
   }
 
-  case class LiveStore() extends Store
+  implicit def arbRawUpdate: Arbitrary[RawUpdate] = Arbitrary(
+    Gen.oneOf(
+      arbitrary[PutProductDetails],
+      arbitrary[AddNote]
+    )
+  )
+
+  implicit def arbLog: Arbitrary[Log] = Arbitrary(
+    Gen.listOf(arbitrary[RawUpdate]).map(_.toVector)
+  )
+
+  implicit def cogen[V]: Cogen[V] = Cogen(v => 13)
+
+  implicit def arbPutProductDetails: Arbitrary[PutProductDetails] = Arbitrary(
+    for {
+      name <- Gen.alphaStr
+      price <- arbitrary[BigDecimal]
+    } yield PutProductDetails(name, price.toFloat) 
+  )
+
+  implicit def arbAddNote: Arbitrary[AddNote] = Arbitrary(
+    for {
+      note <- Gen.alphaStr
+    } yield AddNote(note)
+  )
+  
+
+  implicit def functorConverter[F[_]: Functor, A, B](fa: F[A])(implicit F: Functor[F], a2b: A => B): F[B] =
+    F.map(fa)(a2b)
+
+  implicit def genFunctor: Functor[Gen] = new Functor[Gen] {
+    override def map[A, B](fa: Gen[A])(f: A => B): Gen[B] = fa.map(f)
+  }
 }
-
