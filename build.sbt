@@ -4,9 +4,13 @@ import sbt.Keys.mainClass
 val commonSettings = Seq(
   organization := "com.woodpigeon",
   scalaVersion := "2.12.4",
-  scalacOptions ++= Seq("-Ypartial-unification", "-language:higherKinds", "-Xsource:2.13"),
+  scalacOptions ++= Seq("-Ypartial-unification", "-language:higherKinds", "-Xsource:2.13"), //, "-Xlog-implicits"),
   autoCompilerPlugins := true,
-  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6")
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6"),
+  resolvers ++= Seq(
+    Resolver.sonatypeRepo("releases"),
+    Resolver.sonatypeRepo("snapshots")
+  )
 )
 
 lazy val packageNpm = taskKey[File]("pack into NPM package")
@@ -83,7 +87,8 @@ val dataDependencies = jvmDependencies ++ Seq(
   "org.typelevel" %% "cats-laws" % "1.0.1",
   "org.typelevel" %% "cats-free" % "1.0.1",
   // "org.typelevel" %% "alleycats-core" % "1.0.1",
-  "org.typelevel" %% "kittens" % "1.0.0-RC3"
+  "org.typelevel" %% "kittens" % "1.0.0-RC3",
+  "com.chuusai" %% "shapeless" % "2.3.3"
 )
 
 lazy val dataJVM = data.jvm
@@ -100,7 +105,6 @@ lazy val dataJS = data.js
         // "org.typelevel" %%% "alleycats-core" % "1.0.0-RC1",
         "org.typelevel" %%% "kittens" % "1.0.0-RC3"
       ),
-      resolvers += Resolver.sonatypeRepo("releases")
     )
     .dependsOn(schema.js, dataShared)
     .enablePlugins(ScalaJSPlugin)
