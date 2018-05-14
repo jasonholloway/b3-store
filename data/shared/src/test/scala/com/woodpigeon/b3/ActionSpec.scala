@@ -109,42 +109,9 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
   }
 
 
-  // type Traced[F[_], V] = StateT[F, History, V]
-
-  // val traceActions = λ[Action ~> Traced[Action, ?]](a => { a; ??? })
-
-  //problem of andThen is it puts the state combination into a batch mode thing,
-  //but really we want to be working up breadth first to maintain the order of layering of events
-  //so... we can't just put the transformations in series
-
-  //instead, each yielding needs to be registered there and then. A state context needs to wrap all 
-  //transformations. There's a question here whether the state context should be always present, but
-  //effectively stubbed in the non-tracing implementation. This'd be like having a hole for a probe,
-  //only turned on in testing. It's also the idea of yielding events to outer layers...
-
-  //of course, to the actual transformation this can be, to a degree, transparent - the core will still be a natural transformation of frees
-  //in which case this wrapping will be completely non-invasise; no residual hole receiving god knows what.
-  //But - it does mean that each wiring up of each transformation also has to apply the wrapping,
-  //in order to fish out the state correctly
 
   import cats.Id
   import cats.Monoid
-
-  val compActions: Action ~> Free[LogAction, ?] = λ[Action ~> Free[LogAction, ?]](_=> ???)
-  val compLogActions: LogAction ~> Free[Transaction, ?] = ???
-
-  //our reduce will take a source Free, and translate it using a stateful context - ie a stack.
-  //but to remain abstract, we want to just map using a context.
-  //
-
-
-  //but the problem ain't just that we want the second wrapper; it's the pattern of yielding also - sometimes we want to wait to yield
-  //well we can't do this though. The inner action needs to be immediately responded to with the value of its asking, or the computation
-  //will be immediately blocked. Time cannot go on by itself. So we must always furnish data straight up. Sometimes, however, we don't need
-  //to tell the outside world this is the case - we want to respond back inwards with some dummy data, say, in which case we want to swallow up
-  //our current op and return no value. We could do this by yielding out a None, and then it would be the job of the outer runner to just skip
-  //past this no-op.
-
 
   import Behaviours._
 
@@ -177,15 +144,63 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
   }
 
 
-  val actions = for {
-    product <- Free.pure(Ref.product("1234"))
-    a <- product.view
-    _ <- product.update(PutProductDetails("flimflam", 13.1F))
-  } yield ()
+  
+  
 
-  val logActions = actions.mapK(interpActions)
+  
 
-  val transactions = logActions.mapK(interpLogActions)
+  sealed trait Op[V]
+  case class DummyOp[V](v: V) extends Op[V]
+
+  object Op {
+    def dummy[V](v: V): Free[Op, V] = Free.liftF[Op, V](DummyOp(v))
+  }
+
+  val interpOps = new Interpretor[Id, Op, Id] {
+    def interp[V](step: Step[Id, Op, V]): StepOption[Id, Id, V] = step match {
+      case DummyOp(v) => Some(v)
+    }
+  }
+
+  test("simple interpretation of dummy ops") {
+    val prog = for {
+      v <- Free.pure(13)
+      o <- Op.dummy(13)
+    } yield o
+
+    val result = prog.mapK(interpOps)
+
+    assert(result == 13)
+  }
+
+  
+  
+  
+  
+
+  // test("blahhh") {
+  //   val actions = for {
+  //       product <- Free.pure(Ref.product("1234"))
+  //       a <- product.view
+  //       _ <- product.update(PutProductDetails("flimflam", 13.1F))
+  //   } yield ()
+
+  //   val logActions = actions.mapK(interpActions)
+
+  //   val transactions = logActions.mapK(interpLogActions)
+
+  //   assert(false)
+  // }
+
+  //
+  //go on then, how'd you test this lot then? 
+  //we want to test our Interpretor in various scenarios
+  //
+  //
+
+
+
+
 
 
 
@@ -269,39 +284,6 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
 
 
   }
-
-  import cats.Foldable
-  import cats.syntax.foldable._
-
-  def comp1[V](fa: Free[Action, V])(M: Monad[Free[LogAction, ?]]): Free[LogAction, V] = {
-    fa.step match {
-      case viewEntity(a) => ???
-    }
-
-    //and so it looks like we need our ADT to hav a functor typeclass
-    //
-    //
-
-
-    //every action is turned into some kind of LogAction
-    //but, given a preceding state,we m
-    //
-    ???
-  }
-
-
-
-
-
-  implicit def actionFunctor[V]: Functor[Action[V]] = new Functor[Action[V]] {
-
-    def map[A, B](fa: F[A])(f: A => B): F[B] = ???
-
-
-  }
-
-
-
 
   //but as soon as we start dealing in Nones, we have to accept the possibility of Nones seeping out and up, right to the very top,
   //unless we have some arbitrary conversion from none to Free...
@@ -461,18 +443,6 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
   def traceActions2[V](actions: Free[Action, V]): Free[Traced[Action, ?], V] =
     actions.mapK(trace)
 
-  def traceLogActions2[V](actions: Free[Traced[Action, ?], V]): Free[Traced[LogAction, ?], V] =
-    actions.foldMap(traced(compActions))
-
-  def traceStoreActions2[V](logActions: Free[Traced[LogAction, ?], V]): Free[Traced[Transaction, ?], V] =
-    logActions.foldMap(traced(compLogActions))
-
-
-
-
-
-  def perfectlySimpleCompile: Action ~> LogAction = ???
-  //nb. the real compile step returns a free monad...
 
 
   // def compLogActions[V](tracedActions: FreeT[Action, State[History, ?], V]): FreeT[LogAction, State[History, ?], V] =
