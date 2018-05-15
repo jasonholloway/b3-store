@@ -116,19 +116,38 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
   import Behaviours._
 
   type Step[C[_], S[_], V] = C[S[V]]
-  type StepOption[C[_], T[_], V] = C[Option[T[V]]]
+  type StepResult[C[_], T[_], V] = C[Either[V, T[V]]]
 
+  //but what if the outer tries to carry over and the inner has no more to give it?
+  //How does a Free finish? Must there always be a final, explicit yielding?
+
+  Free.liftF(List(4, 1))
 
   object Step {
     def liftK[C[_], S[_]]: S ~> Step[C, S, ?] = ???
   }
 
 
-  trait Interpretor[C[_], S[_], T[_]] extends FunctionK[S, T] {
+  trait Interpretor[C[_], S[_], T[_]] {
 
-    def interp[V](step: Step[C, S, V]): StepOption[C, T, V]
+    def interp[V](step: Step[C, S, V]): StepResult[C, T, V]
 
-    override def apply[V](s: S[V]): T[V] = ???
+    def apply[V](s: Free[S, V])(implicit CC: Comonad[C]): Free[T, V] = {
+      
+      val steppify = λ[S ~> Step[C, S, ?]](_ => ???)
+
+      val transform = λ[Step[C, S, ?] ~> StepResult[C, T, ?]](interp(_))
+
+      val compact = λ[StepResult[C, T, ?] ~> Free[T, ?]](CC.extract(_) match {
+        case Left(v) => Free.pure(v)
+        case Right(t) => ???
+      })
+
+      //if left, we want to just lift the value
+      //
+
+      s.foldMap(steppify.andThen(transform).andThen(compact))
+    }
 
   }
 
@@ -136,11 +155,11 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
 
 
   val interpActions = new Interpretor[Id, Action, LogAction] {
-    def interp[V](step: Step[Id, Action, V]): StepOption[Id, LogAction, V] = ???
+    def interp[V](step: Step[Id, Action, V]): StepResult[Id, LogAction, V] = ???
   }
 
   val interpLogActions = new Interpretor[Id, LogAction, Transaction] {
-    def interp[V](step: Step[Id, LogAction, V]): StepOption[Id, Transaction, V] = ???
+    def interp[V](step: Step[Id, LogAction, V]): StepResult[Id, Transaction, V] = ???
   }
 
 
@@ -157,10 +176,12 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
   }
 
   val interpOps = new Interpretor[Id, Op, Id] {
-    def interp[V](step: Step[Id, Op, V]): StepOption[Id, Id, V] = step match {
-      case DummyOp(v) => Some(v)
+
+    def interp[V](step: Step[Id, Op, V]): StepResult[Id, Id, V] = step match {
+      case DummyOp(v) => ???
     }
   }
+
 
   test("simple interpretation of dummy ops") {
     val prog = for {
@@ -168,7 +189,7 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
       o <- Op.dummy(13)
     } yield o
 
-    val result = prog.mapK(interpOps)
+    val result = interpOps(prog)
 
     assert(result == 13)
   }
