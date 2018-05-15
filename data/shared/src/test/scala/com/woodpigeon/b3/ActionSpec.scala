@@ -110,63 +110,56 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
 
 
 
+
   import cats.Id
   import cats.Monoid
 
-  import Behaviours._
-
-  type Step[C[_], S[_], V] = C[S[V]]
-  type StepResult[C[_], T[_], V] = C[Either[V, T[V]]]
-
-  //but what if the outer tries to carry over and the inner has no more to give it?
-  //How does a Free finish? Must there always be a final, explicit yielding?
-
-  Free.liftF(List(4, 1))
-
-  object Step {
-    def liftK[C[_], S[_]]: S ~> Step[C, S, ?] = ???
-  }
-
+  //interp must itself return Free[Interpreted[C, T, ?], ?]
+  //this'd allow multiple suspensions to be yielded upwards; branching out into the air
 
   trait Interpretor[C[_], S[_], T[_]] {
+    
+    type Step[C[_], S[_], V] = C[S[V]]
+    type Interpreted[C[_], T[_], V] = C[Either[V, T[V]]]
 
-    def interp[V](step: Step[C, S, V]): StepResult[C, T, V]
 
-    def apply[V](s: Free[S, V])(implicit CC: Comonad[C]): Free[T, V] = {
+    def interp[V](step: Step[C, S, V]): Interpreted[C, T, V]
+
+
+    def apply[V](s: Free[S, V])(implicit CM: Monad[C], CC: Comonad[C]): Free[T, V] = {
       
-      val steppify = λ[S ~> Step[C, S, ?]](_ => ???)
+      val steppify = λ[S ~> Step[C, S, ?]](CM.pure(_))
 
-      val transform = λ[Step[C, S, ?] ~> StepResult[C, T, ?]](interp(_))
+      val transform = λ[Step[C, S, ?] ~> Interpreted[C, T, ?]](interp(_))
 
-      val compact = λ[StepResult[C, T, ?] ~> Free[T, ?]](CC.extract(_) match {
-        case Left(v) => Free.pure(v)
-        case Right(t) => ???
-      })
-
-      //if left, we want to just lift the value
-      //
+      val compact = λ[Interpreted[C, T, ?] ~> Free[T, ?]] {
+        CC.extract(_) match {              //extract is supposed to, err, run any computation wrapped by C - this is how the value is returned out
+          case Left(v) => Free.pure(v)
+          case Right(t) => Free.liftF(t)
+        }}
 
       s.foldMap(steppify.andThen(transform).andThen(compact))
     }
 
+    //T[_] needn't always nestle within a Free... we can interpret into an M[_] also
+    //each yielding equates to the returning of a monad, which will then be folded externally
+    //but if it's a Left, then we need only map the previous suspension
+    //if it's a right, then we wanna flatMap, or rather just return
+
   }
-
-
 
 
   val interpActions = new Interpretor[Id, Action, LogAction] {
-    def interp[V](step: Step[Id, Action, V]): StepResult[Id, LogAction, V] = ???
+    def interp[V](step: Step[Id, Action, V]): Interpreted[Id, LogAction, V] = ???
   }
 
   val interpLogActions = new Interpretor[Id, LogAction, Transaction] {
-    def interp[V](step: Step[Id, LogAction, V]): StepResult[Id, Transaction, V] = ???
+    def interp[V](step: Step[Id, LogAction, V]): Interpreted[Id, Transaction, V] = ???
   }
 
 
   
-  
-
-  
+  import Behaviours._
 
   sealed trait Op[V]
   case class DummyOp[V](v: V) extends Op[V]
@@ -177,8 +170,8 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
 
   val interpOps = new Interpretor[Id, Op, Id] {
 
-    def interp[V](step: Step[Id, Op, V]): StepResult[Id, Id, V] = step match {
-      case DummyOp(v) => ???
+    def interp[V](step: Step[Id, Op, V]): Interpreted[Id, Id, V] = step match {
+      case DummyOp(v) => Left(v)
     }
   }
 
