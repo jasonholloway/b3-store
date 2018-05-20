@@ -114,83 +114,117 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
   import cats.Id
   import cats.Monoid
 
-  //interp must itself return Free[Interpreted[C, T, ?], ?]
-  //this'd allow multiple suspensions to be yielded upwards; branching out into the air
-
-  trait Interpretor[C[_], S[_], T[_]] {
+  trait Interpretor[C[_], S[_], M[_]] {
     
     type Step[C[_], S[_], V] = C[S[V]]
-    type Interpreted[C[_], T[_], V] = C[Either[V, T[V]]]
+    type Interpreted[C[_], M[_], V] = C[Either[V, M[V]]]
 
 
-    def interp[V](step: Step[C, S, V]): Interpreted[C, T, V]
+    def interp[V](step: Step[C, S, V]): Interpreted[C, M, V]
 
 
-    def apply[V](s: Free[S, V])(implicit CM: Monad[C], CC: Comonad[C]): Free[T, V] = {
+    def apply[V](s: Free[S, V])(implicit C: Monad[C], M: Monad[M], CM: C ~> M): M[V] = {
       
-      val steppify = λ[S ~> Step[C, S, ?]](CM.pure(_))
+      val steppify = λ[S ~> Step[C, S, ?]](C.pure(_))
 
-      val transform = λ[Step[C, S, ?] ~> Interpreted[C, T, ?]](interp(_))
+      val transform = λ[Step[C, S, ?] ~> Interpreted[C, M, ?]](interp(_))
 
-      val compact = λ[Interpreted[C, T, ?] ~> Free[T, ?]] {
-        CC.extract(_) match {              //extract is supposed to, err, run any computation wrapped by C - this is how the value is returned out
-          case Left(v) => Free.pure(v)
-          case Right(t) => Free.liftF(t)
-        }}
+      val distil = λ[Interpreted[C, M, ?] ~> M](c => {
+        M.flatMap(CM(c)) {
+          case Left(v) => M.pure(v)
+          case Right(m) => m
+        }
+      })
 
-      s.foldMap(steppify.andThen(transform).andThen(compact))
+      val a = s.mapK(steppify)
+      val b = a.foldMap(transform.andThen(distil))
+        // .foldMap(transform)
+        // .foldMap(distil)
+
+      b
     }
 
-    //T[_] needn't always nestle within a Free... we can interpret into an M[_] also
-    //each yielding equates to the returning of a monad, which will then be folded externally
-    //but if it's a Left, then we need only map the previous suspension
-    //if it's a right, then we wanna flatMap, or rather just return
-
   }
-
-
-  val interpActions = new Interpretor[Id, Action, LogAction] {
-    def interp[V](step: Step[Id, Action, V]): Interpreted[Id, LogAction, V] = ???
-  }
-
-  val interpLogActions = new Interpretor[Id, LogAction, Transaction] {
-    def interp[V](step: Step[Id, LogAction, V]): Interpreted[Id, Transaction, V] = ???
-  }
-
 
   
   import Behaviours._
 
   sealed trait Op[V]
-  case class DummyOp[V](v: V) extends Op[V]
+  case class Set(w: String) extends Op[String]
+  case class Append(w: String) extends Op[String]
 
   object Op {
-    def dummy[V](v: V): Free[Op, V] = Free.liftF[Op, V](DummyOp(v))
+    def set(w: String): Free[Op, String] = Free.liftF[Op, String](Set(w))
+    def append(w: String): Free[Op, String] = Free.liftF[Op, String](Append(w))
   }
+  
+  "interpreting with state" -> {
 
-  val interpOps = new Interpretor[Id, Op, Id] {
-
-    def interp[V](step: Step[Id, Op, V]): Interpreted[Id, Id, V] = step match {
-      case DummyOp(v) => Left(v)
+    val interp = new Interpretor[State[String, ?], Op, Id] {
+      def interp[V](step: Step[State[String, ?], Op, V]): Interpreted[State[String, ?], Id, V] =
+        step.transform {
+          case (s, Set(w)) =>
+            (w, Left(w))
+          case (s, Append(w)) =>
+            val s2 = s + w
+            println((s, w, s2))
+            (s2, Left(s2))
+        }
     }
+
+    implicit def stateExtractor[S](implicit S: Monoid[S]): State[S, ?] ~> Id =     //or should this be an InjectK???
+      λ[State[S, ?] ~> Id](_.runEmptyA.value)
+
+
+    test("accumulates state") {
+      val prog = for {
+        _ <- Op.set("boo!")
+        o <- Op.append(" rah!")
+      } yield o
+
+      val result = interp(prog)
+
+      assert(result == "boo! rah!")
+    }
+
   }
+  
 
+  "interpreting without state" -> {
 
-  test("simple interpretation of dummy ops") {
-    val prog = for {
-      v <- Free.pure(13)
-      o <- Op.dummy(13)
-    } yield o
+    val interp = new Interpretor[Id, Op, Id] {
+      def interp[V](step: Step[Id, Op, V]): Interpreted[Id, Id, V] = step match {
+        case Set(v) => Left(v)
+        case Append(w) => Right(w)
+      }
+    }
 
-    val result = interpOps(prog)
+    implicit def idK[A[_]]: A ~> A = λ[A ~> A](a => a)
 
-    assert(result == 13)
+    test("interprets value") {
+      val prog = for {
+        _ <- Op.set("ya")
+        o <- Op.set("boo!")
+      } yield o
+
+      val result = interp(prog)
+
+      assert(result == "boo!")
+    }
+
+    test("interpretation involving further suspension") {
+      //this currently makes no sense
+      val prog = for {
+        _ <- Op.append("IGNORED")
+        s <- Op.append("HELLO!")
+      } yield s
+
+      val result = interp(prog)
+
+      assert(result == "HELLO!")
+    }
+
   }
-
-  
-  
-  
-  
 
   // test("blahhh") {
   //   val actions = for {
