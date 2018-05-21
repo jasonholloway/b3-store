@@ -145,8 +145,6 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
   
   "interpreting with state" -> {
 
-
-
     val interp = new Interpretor[State[String, ?], Op, Id] {
       def interp[V](step: Step[State[String, ?], Op, V]): Interpreted[State[String, ?], Id, V] =
         step.transform {
@@ -176,6 +174,56 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
 
   }
   
+  "interpretation fan-out" -> {
+
+    import cats.instances.list._
+
+    val interp = new Interpretor[Id, Op, List[?]] {
+      def interp[V](step: Step[Id, Op, V]): Interpreted[Id, List[?], V] = step match {
+        case Set(v) => List(v)
+        case Append(v) => List(v, v, v)
+      }
+    }
+
+    implicit def id2List = λ[Id ~> List](v => List(v))
+
+    test("yields many") {
+      val prog = for {
+        _ <- Op.set("schnurp")
+        o <- Op.append("wibblewibble")
+      } yield o
+
+      val result = interp(prog)
+
+      assert(result == List("wibblewibble", "wibblewibble", "wibblewibble"))
+    }
+  }
+
+  "interpretation compression"-> {
+
+    //and here we go... how can we possibly compress? Well, we need to return Left to say 'no!'
+    //but in doing so we can return a updated state, so we are progressing, but we internalise our new state
+    //instead of blurting it out into the wider world
+
+    val interp = new Interpretor[Id, Op, Free[Op, ?]] {
+      def interp[V](step: Step[Id, Op, V]): Interpreted[Id, Free[Op, ?], V] =  step match {
+        case Append(w) => ???
+      }
+    }
+
+    implicit def id2Free = λ[Id ~> Free[Op, ?]](v => Free.pure(v))
+
+    val prog = for {
+      _ <- Op.append("h")
+      _ <- Op.append("e")
+      o <- Op.append("y")
+    } yield o
+
+    val result = interp(prog)
+    
+    assert(result == "hey")
+  }
+
 
   "interpreting without state" -> {
 
