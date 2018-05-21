@@ -117,31 +117,16 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
   trait Interpretor[C[_], S[_], M[_]] {
     
     type Step[C[_], S[_], V] = C[S[V]]
-    type Interpreted[C[_], M[_], V] = C[Either[V, M[V]]]
-
+    type Interpreted[C[_], M[_], V] = C[M[V]]
 
     def interp[V](step: Step[C, S, V]): Interpreted[C, M, V]
 
-
-    def apply[V](s: Free[S, V])(implicit C: Monad[C], M: Monad[M], CM: C ~> M): M[V] = {
+    def apply[V](s: Free[S, V])(implicit C: Monad[C], M: Monad[M], CM: C ~> M, I: Monad[Interpreted[C, M, ?]]): M[V] = {
+      def steppify = λ[S ~> Step[C, S, ?]](C.pure(_))
+      def transform = λ[Step[C, S, ?] ~> Interpreted[C, M, ?]](interp(_))
+      def flatten[V](c: Interpreted[C, M, V]) = M.flatten(CM.apply(c))
       
-      val steppify = λ[S ~> Step[C, S, ?]](C.pure(_))
-
-      val transform = λ[Step[C, S, ?] ~> Interpreted[C, M, ?]](interp(_))
-
-      val distil = λ[Interpreted[C, M, ?] ~> M](c => {
-        M.flatMap(CM(c)) {
-          case Left(v) => M.pure(v)
-          case Right(m) => m
-        }
-      })
-
-      val a = s.mapK(steppify)
-      val b = a.foldMap(transform.andThen(distil))
-        // .foldMap(transform)
-        // .foldMap(distil)
-
-      b
+      flatten(s.foldMap(steppify.andThen(transform)))
     }
 
   }
@@ -160,19 +145,21 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
   
   "interpreting with state" -> {
 
+
+
     val interp = new Interpretor[State[String, ?], Op, Id] {
       def interp[V](step: Step[State[String, ?], Op, V]): Interpreted[State[String, ?], Id, V] =
         step.transform {
           case (s, Set(w)) =>
-            (w, Left(w))
+            (w, w)
           case (s, Append(w)) =>
             val s2 = s + w
             println((s, w, s2))
-            (s2, Left(s2))
+            (s2, s2)
         }
     }
 
-    implicit def stateExtractor[S](implicit S: Monoid[S]): State[S, ?] ~> Id =     //or should this be an InjectK???
+    implicit def stateExtractor[S](implicit S: Monoid[S]): State[S, ?] ~> Id =
       λ[State[S, ?] ~> Id](_.runEmptyA.value)
 
 
@@ -192,14 +179,17 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
 
   "interpreting without state" -> {
 
-    val interp = new Interpretor[Id, Op, Id] {
-      def interp[V](step: Step[Id, Op, V]): Interpreted[Id, Id, V] = step match {
-        case Set(v) => Left(v)
-        case Append(w) => Right(w)
+    import cats.Eval
+
+    val interp = new Interpretor[Eval, Op, Id] {
+      def interp[V](step: Step[Eval, Op, V]): Interpreted[Eval, Id, V] = step.value match {
+        case Set(v) => Eval.now(v)
+        case Append(w) => Eval.now(w)
       }
     }
 
-    implicit def idK[A[_]]: A ~> A = λ[A ~> A](a => a)
+    implicit def eval2Id: Eval ~> Id = λ[Eval ~> Id](e => e.value)
+    implicit def id2Id[A[_]]: A ~> A = λ[A ~> A](a => a)
 
     test("interprets value") {
       val prog = for {
