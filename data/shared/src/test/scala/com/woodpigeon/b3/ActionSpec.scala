@@ -116,17 +116,17 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
 
   trait Interpretor[C[_], S[_], M[_]] {
     
-    type Step[C[_], S[_], V] = C[S[V]]
-    type Interpreted[C[_], M[_], V] = C[M[V]]
+    type From[V] = C[S[V]]
+    type To[V] = C[M[V]]
 
-    def interp[V](step: Step[C, S, V]): Interpreted[C, M, V]
+    def interp[V](from: From[V]): To[V]
 
-    def apply[V](s: Free[S, V])(implicit C: Monad[C], M: Monad[M], CM: C ~> M, I: Monad[Interpreted[C, M, ?]]): M[V] = {
-      def steppify = λ[S ~> Step[C, S, ?]](C.pure(_))
-      def transform = λ[Step[C, S, ?] ~> Interpreted[C, M, ?]](interp(_))
-      def flatten[V](c: Interpreted[C, M, V]) = M.flatten(CM.apply(c))
+    def apply[V](s: Free[S, V])(implicit C: Monad[C], M: Monad[M], CM: C ~> M, I: Monad[To[?]]): M[V] = {
+      def prep = λ[S ~> From[?]](C.pure(_))
+      def transform = λ[From[?] ~> To[?]](interp(_))
+      def finish[V](c: To[V]) = M.flatten(CM.apply(c))
       
-      flatten(s.foldMap(steppify.andThen(transform)))
+      finish(s.foldMap(prep.andThen(transform)))
     }
 
   }
@@ -146,8 +146,8 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
   "interpreting with state" -> {
 
     val interp = new Interpretor[State[String, ?], Op, Id] {
-      def interp[V](step: Step[State[String, ?], Op, V]): Interpreted[State[String, ?], Id, V] =
-        step.transform {
+      def interp[V](from: From[V]): To[V] =
+        from.transform {
           case (s, Set(w)) =>
             (w, w)
           case (s, Append(w)) =>
@@ -179,7 +179,7 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
     import cats.instances.list._
 
     val interp = new Interpretor[Id, Op, List[?]] {
-      def interp[V](step: Step[Id, Op, V]): Interpreted[Id, List[?], V] = step match {
+      def interp[V](from: From[V]): To[V] = from match {
         case Set(v) => List(v)
         case Append(v) => List(v, v, v)
       }
@@ -199,29 +199,44 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
     }
   }
 
+
   "interpretation compression"-> {
 
-    //and here we go... how can we possibly compress? Well, we need to return Left to say 'no!'
-    //but in doing so we can return a updated state, so we are progressing, but we internalise our new state
-    //instead of blurting it out into the wider world
+    import cats.Eval
+    import cats.instances.string._
 
-    val interp = new Interpretor[Id, Op, Free[Op, ?]] {
-      def interp[V](step: Step[Id, Op, V]): Interpreted[Id, Free[Op, ?], V] =  step match {
-        case Append(w) => ???
+    val interp1 = new Interpretor[State[String, ?], Op, Free[Op, ?]] {
+      def interp[V](from: From[V]): To[V] =
+        from.transform {
+          case (s, Append("!")) => ("", Op.append(s))
+          case (s, Append(w)) => (s + w, Free.pure(w))
+        }
+    }
+
+    val interp2 = new Interpretor[Id, Op, Eval] {
+      def interp[V](from: From[V]): To[V] = from match {
+        case Append(w) => Eval.now(w)
       }
     }
 
+    implicit def evalMonad: Monad[Eval] = ???
+    implicit def freeMonad: Monad[Free[Op, ?]] = ???
+    implicit def iMonad: Monad[λ[v => State[String, Free[Op, v]]]] = ???
+    implicit def state2Free = λ[State[String, ?] ~> Free[Op, ?]](s => Free.pure(s.runEmptyA.value))
     implicit def id2Free = λ[Id ~> Free[Op, ?]](v => Free.pure(v))
+    implicit def id2Eval = λ[Id ~> Eval](Eval.now(_))
 
     val prog = for {
       _ <- Op.append("h")
       _ <- Op.append("e")
-      o <- Op.append("y")
+      _ <- Op.append("y")
+      o <- Op.append("!")
     } yield o
 
-    val result = interp(prog)
+    val transformation = interp1(prog)
+    val result = interp2(transformation)
     
-    assert(result == "hey")
+    assert(result == "hey!")
   }
 
 
@@ -230,7 +245,7 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
     import cats.Eval
 
     val interp = new Interpretor[Eval, Op, Id] {
-      def interp[V](step: Step[Eval, Op, V]): Interpreted[Eval, Id, V] = step.value match {
+      def interp[V](from: From[V]): To[V] = from.value match {
         case Set(v) => Eval.now(v)
         case Append(w) => Eval.now(w)
       }
