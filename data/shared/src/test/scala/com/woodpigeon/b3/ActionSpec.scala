@@ -205,13 +205,22 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
     import cats.Eval
     import cats.instances.string._
 
+    implicit def evalMonad: Monad[Eval] = ???
+    implicit def freeMonad: Monad[Free[Op, ?]] = ???
+    implicit def iMonad: Monad[λ[v => State[String, Free[Op, v]]]] = ???
+    implicit def state2Free = λ[State[String, ?] ~> Free[Op, ?]](s => Free.pure(s.runEmptyA.value))
+    implicit def id2Free = λ[Id ~> Free[Op, ?]](v => Free.pure(v))
+    implicit def id2Eval = λ[Id ~> Eval](Eval.now(_))
+
+
     val interp1 = new Interpretor[State[String, ?], Op, Free[Op, ?]] {
       def interp[V](from: From[V]): To[V] =
-        from.transform {
-          case (s, Append("!")) => ("", Op.append(s))
-          case (s, Append(w)) => (s + w, Free.pure(w))
-        }
+        from.transform { (s: String, o: Op[V]) => o match {
+          case Append("!") => ("", Op.append(s))
+          case Append(w) => (s + w, Free.pure(w))
+        } }
     }
+
 
     val interp2 = new Interpretor[Id, Op, Eval] {
       def interp[V](from: From[V]): To[V] = from match {
@@ -219,12 +228,6 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
       }
     }
 
-    implicit def evalMonad: Monad[Eval] = ???
-    implicit def freeMonad: Monad[Free[Op, ?]] = ???
-    implicit def iMonad: Monad[λ[v => State[String, Free[Op, v]]]] = ???
-    implicit def state2Free = λ[State[String, ?] ~> Free[Op, ?]](s => Free.pure(s.runEmptyA.value))
-    implicit def id2Free = λ[Id ~> Free[Op, ?]](v => Free.pure(v))
-    implicit def id2Eval = λ[Id ~> Eval](Eval.now(_))
 
     val prog = for {
       _ <- Op.append("h")
