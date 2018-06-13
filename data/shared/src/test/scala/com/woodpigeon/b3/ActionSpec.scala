@@ -26,6 +26,7 @@ import org.typelevel.discipline.scalatest.Discipline
 import cats.instances.tuple._
 import cats.instances.int._
 import scala.Some
+import scala.annotation.tailrec
 
 class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
   import Behaviours._
@@ -205,12 +206,39 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
     import cats.Eval
     import cats.instances.string._
 
-    implicit def evalMonad: Monad[Eval] = ???
-    implicit def freeMonad: Monad[Free[Op, ?]] = ???
-    implicit def iMonad: Monad[λ[v => State[String, Free[Op, v]]]] = ???
     implicit def state2Free = λ[State[String, ?] ~> Free[Op, ?]](s => Free.pure(s.runEmptyA.value))
     implicit def id2Free = λ[Id ~> Free[Op, ?]](v => Free.pure(v))
     implicit def id2Eval = λ[Id ~> Eval](Eval.now(_))
+
+    implicit def iM[C[_], M[_]](implicit C: Monad[C], M: Monad[M], CM: C ~> M): Monad[λ[v => C[M[v]]]] =
+      new Monad[λ[v => C[M[v]]]] {
+        def pure[A](x: A): C[M[A]] = C.pure(M.pure(x))
+
+        def flatMap[A, B](cma: C[M[A]])(f: A => C[M[B]]): C[M[B]] =
+          C.map(cma) {
+            M.flatMap(_) { a =>
+              M.flatten(CM(f(a)))
+            }
+          }
+
+        def tailRecM[A, B](a: A)(f: A => C[M[Either[A, B]]]): C[M[B]] = {
+          @tailrec
+          def run(cme: C[M[Either[A, B]]]): C[M[B]] = {
+            val next = C.map(cme) {
+              M.flatMap(_) {
+                case Right(b) =>
+                  M.pure(Right(b) : Either[A, B])
+                case Left(a) =>
+                  M.flatten(CM(f(a)))
+              }
+            }
+            run(next)
+          }
+
+          run(f(a))
+        }
+
+      }
 
 
     val interp1 = new Interpretor[State[String, ?], Op, Free[Op, ?]] {
