@@ -1,6 +1,7 @@
 package com.woodpigeon.b3 
 
-import cats.{ Eval, Foldable, Traverse }
+import cats.functor.Bifunctor
+import cats.{ Distributive, Eval, Foldable, Traverse }
 import cats.arrow.FunctionK
 import cats.data.{ IdT, StateT }
 import cats.free.FreeT
@@ -114,6 +115,201 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
 
   import cats.Id
   import cats.Monoid
+  import cats.Bifunctor
+
+
+  object Implicits {
+
+
+    implicit def monadInAMonadMonad2[C[_], M[_]](implicit C: Monad[C] with Distributive[C] with Comonad[C], M: Monad[M], E: Bifunctor[Either[?, ?]],  M2C: M ~> C): Monad[λ[v => C[M[v]]]] =
+      new Monad[λ[v => C[M[v]]]] {
+        def pure[A](x: A): C[M[A]] = C.pure(M.pure(x))
+
+        def flatMap[A, B](cma: C[M[A]])(f: A => C[M[B]]): C[M[B]] =
+          C.flatMap(cma)(ma => {
+            val cmmb = C.distribute(ma)(f(_))
+            val cmb = C.map(cmmb)(M.flatten(_))
+            cmb
+          })
+
+        // def tailRecM2[A, B](a: A)(f: A => C[M[Either[A, B]]]) = {
+
+        //   val cme = C.tailRecM(M.pure(Left(a): Either[A, B]))(me => {
+        //     val ce = M2C(me)
+        //     C.map(ce)(e => {
+
+        //       //HERE! we need switch on the e
+
+        //       E.bimap(e)(
+        //         a => M.map(me)(_ => Left(a): Either[A, B]),
+        //         b => M.map(me)(_ => Right(b): Either[A, B])
+        //       )
+        //     })
+        //   })
+
+        //   C.map(cme)(me => ???)
+          
+        //   ???
+        // }
+
+
+        def tailRecM2[A, B](a: A)(f: A => C[M[Either[A, B]]]) = {
+
+          val cme = C.tailRecM(M.pure(Left(a): Either[A, B]))(me => {
+
+            //HOW TO GET 'a' HERE?
+            //we have to peek into M as well? 
+
+            val cme = f(a) //here we have the fullfat value
+
+            val ce = C.flatMap(cme)(M2C(_))  //wastey but useful
+
+            val me: M[Either[A, B]] = ???
+
+            val ceme = C.map(ce)(E.bimap(_)(
+              a => M.map(me)(_ => Left(a): Either[A, B]),
+              b => M.map(me)(_ => Right(b): Either[A, B])
+            ))
+
+            ceme
+          })
+
+          C.map(cme)(me => ???)
+          
+          ???
+        }
+
+
+        //now we've got cme: C[M[Either[A, B]]]
+        //which has all the f's folded in, despite being the type of a single f output
+        //we need to reduce it to C[M[B]]
+        //
+        //BUT! we haven't actually got an f() in our entire above concoction!
+        //so nothing is folded in - instead we've effectively done a pure() on a
+        //good progress nevertheless
+        //
+        //
+        //
+        //
+
+
+        //right... so we have to write our own bespoke implementation.
+        //essentially, we need to be able to sink one of the monads into the other, without actually losing that monad
+        //going C~>M gives us enough to carry on going, but we still have the original C hanging about
+        //the problem with relying on M.tailRecM or whatever is that we're severely constrained as to what we can actually pass through
+        //the cascading evaluations
+        //we can get to M[Either[A,B]] => C[Either[M[Either[A,B]], M[Either[A,B]]]], if we allow a sneaky peeking at the results of M
+        //this lets us bring the either out of M and into C
+        //at each loop of the recursion, we need to then access the result of the M passed along to us 
+        //we can do this by absorbing into the dominant context of the tail recursion 
+        //
+        //but don't we there by lose the inferior context? Nope! - we only convert it temporarily
+        //the full-blown context is passed along as a value 
+        //
+        //
+        //
+
+
+
+        //if i can get the one below to recurse without blowing the stack, we can expand it easily to break via Either
+        def tailRecM[A, B](a: A)(f: A => C[M[Either[A, B]]]) = {
+
+          val cme = f(a)
+
+
+
+
+          C.tailRecM(a)(aa => {
+            val cme = f(aa)
+            ???
+          })
+
+
+          C.tailRecM(M.pure(a))(ma => {
+            val cmme = C.distribute(ma)(f(_))
+            val cme = C.map(cmme)(M.flatten(_))
+
+            val me = C.extract(cme)
+            //so, the above allows us to peek inside, but if it's like a task or something, then we can't block till the task completes, can we?
+            //that'd be a dirty hack, really we're asking to be able to convert the context into Identity, which would effectively be an immediate, blocking evaluation.
+            //Id could be aborbed into the current computation no questions asked. Though, really, we'd want to be able to apecify the exact type to model the
+            //computation. But then tailRecM would be blown apart again, as tailRecM is a special facility of the current mode of computation, that requires immediate access sto their
+            //fruits of its labour. You can't just switch into another mode when you wish and expect the mechanism to function as if this new layer of ambiguity wasn't there.
+
+            //C[M[?]] is such a combined context - so we can't just use one and hope to hide the other away (well, we can, but this requires us to expect absorption, like
+            //with Id, or C~>M). We don't want absorption, as that destroys visible structure, which our interpretor needs. So we have to keep both the modesof computation about.
+
+            //and so we can't just delegate to the tailRecM of one of them only - we need to write our own, relying on other facilities of the individual monads.
+            //
+
+
+            //I'd need to be able to 'distribute' M as well...
+            //it seems... 
+            //the either needs to get to the top...
+            //I mean, we want to keep the M around, but it'sbe nice to peek into it - which is a kind of special power. A non-destructive peeking.
+            //Peeking into a task implies evaluation - in fact all peeking needs evaluation - but this should be transparent
+            //
+            //But evaluating doesn't mean annihilating the context. If we can peek into the innards, then we can repackage the Either to be consumable by tailRecM
+            //
+            //
+
+
+            ???
+          })
+        }
+
+      }
+  }
+
+
+
+
+    implicit def monadInAMonadMonad[C[_], M[_]](implicit C: Monad[C], M: Monad[M], CM: C ~> M): Monad[λ[v => C[M[v]]]] =
+      new Monad[λ[v => C[M[v]]]] {
+        def pure[A](x: A): C[M[A]] = C.pure(M.pure(x))
+
+        def flatMap[A, B](cma: C[M[A]])(f: A => C[M[B]]): C[M[B]] =
+          C.map(cma) {
+            M.flatMap(_) { a =>
+              M.flatten(CM(f(a)))
+            }
+          }
+
+
+        //if i can get the one below to recurse without blowing the stack, we can expand it easily to break via Either
+        def tailRecM2[A, B](a: A)(f: A => C[M[A]]) = {
+          C.flatMap(C.pure(M.pure(a))) {
+            ma => M.flatMap(ma)(f(_))
+          }
+        }
+
+        def tailRecM3[A, B](a: A)(f: A => C[M[Either[A, B]]]): C[M[B]] = {
+          C.tailRecM(M.pure(a)) {
+            ma => {
+              val n = M.map(ma)(f(_))
+
+          n
+              //this is where I need a distributive law in place
+
+              n
+            }
+          }
+        }
+
+
+
+        def tailRecM[A, B](a: A)(f: A => C[M[Either[A, B]]]): C[M[B]] = {
+          println("tailRecM alert!", a)
+          val mb = M.tailRecM(a)(aa => M.flatten(CM(f(aa))))
+          C.pure(mb)
+
+          //so... the problem here is that we're losing the composable C
+          //it can't really be submerged into M so easily...
+          //it sinks without a trace. Even if it were semantically contained within the result,
+          //we'd have no way of dredging it out again for composing together?
+        }
+      }
+  }
 
   trait Interpretor[C[_], S[_], M[_]] {
     
@@ -200,62 +396,34 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
     }
   }
 
+  import cats.Eval
+  import cats.instances.string._
+  import Implicits._
+
+  implicit def state2Free = λ[State[String, ?] ~> Free[Op, ?]](s => Free.pure(s.runEmptyA.value))
+  implicit def id2Free = λ[Id ~> Free[Op, ?]](v => Free.pure(v))
+  implicit def id2Eval = λ[Id ~> Eval](Eval.now(_))
 
   "interpretation compression"-> {
 
-    import cats.Eval
-    import cats.instances.string._
-
-    implicit def state2Free = λ[State[String, ?] ~> Free[Op, ?]](s => Free.pure(s.runEmptyA.value))
-    implicit def id2Free = λ[Id ~> Free[Op, ?]](v => Free.pure(v))
-    implicit def id2Eval = λ[Id ~> Eval](Eval.now(_))
-
-    implicit def iM[C[_], M[_]](implicit C: Monad[C], M: Monad[M], CM: C ~> M): Monad[λ[v => C[M[v]]]] =
-      new Monad[λ[v => C[M[v]]]] {
-        def pure[A](x: A): C[M[A]] = C.pure(M.pure(x))
-
-        def flatMap[A, B](cma: C[M[A]])(f: A => C[M[B]]): C[M[B]] =
-          C.map(cma) {
-            M.flatMap(_) { a =>
-              M.flatten(CM(f(a)))
-            }
-          }
-
-        def tailRecM[A, B](a: A)(f: A => C[M[Either[A, B]]]): C[M[B]] = {
-          @tailrec
-          def run(cme: C[M[Either[A, B]]]): C[M[B]] = {
-            val next = C.map(cme) {
-              M.flatMap(_) {
-                case Right(b) =>
-                  M.pure(Right(b) : Either[A, B])
-                case Left(a) =>
-                  M.flatten(CM(f(a)))
-              }
-            }
-            run(next)
-          }
-
-          run(f(a))
-        }
-
-      }
-
-
     val interp1 = new Interpretor[State[String, ?], Op, Free[Op, ?]] {
-      def interp[V](from: From[V]): To[V] =
-        from.transform { (s: String, o: Op[V]) => o match {
-          case Append("!") => ("", Op.append(s))
-          case Append(w) => (s + w, Free.pure(w))
-        } }
+      def interp[V](from: From[V]): To[V] = {
+        from.transform((s: String, o: Op[V]) => {
+          println((s, o))    //s is ALWAYS empty! None of the preceding state is being passed in
+          o match {
+            case Append("!") => ("", Op.append(s))
+            case Append(w) => (s + w, Free.pure(w))
+          }
+        })
+      }
     }
-
 
     val interp2 = new Interpretor[Id, Op, Eval] {
       def interp[V](from: From[V]): To[V] = from match {
         case Append(w) => Eval.now(w)
+        case _ => ???
       }
     }
-
 
     val prog = for {
       _ <- Op.append("h")
@@ -264,8 +432,9 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
       o <- Op.append("!")
     } yield o
 
-    val transformation = interp1(prog)
-    val result = interp2(transformation)
+
+    val intermediate = interp1(prog)
+    val result = interp2(intermediate).value
     
     assert(result == "hey!")
   }
@@ -310,74 +479,6 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
 
   }
 
-  // test("blahhh") {
-  //   val actions = for {
-  //       product <- Free.pure(Ref.product("1234"))
-  //       a <- product.view
-  //       _ <- product.update(PutProductDetails("flimflam", 13.1F))
-  //   } yield ()
-
-  //   val logActions = actions.mapK(interpActions)
-
-  //   val transactions = logActions.mapK(interpLogActions)
-
-  //   assert(false)
-  // }
-
-  //
-  //go on then, how'd you test this lot then? 
-  //we want to test our Interpretor in various scenarios
-  //
-  //
-
-
-
-
-
-
-
-  //there's a question of whether state should propagate between layers - I don't think it should.
-  //So - this means that the whole state thing should just be a temporary thing
-
-  //Each interpretator layer has a native context, but then the next layer has a clean slate
-  //Nones should also be transparent - they must go to the very top to maintain the structure of the blancmange
-  //but our closely-specified FunctionK's shouldn't be aware of them passing through.
-  //each interpretor 
-
-
-
-
-
-  //I've been lulled again by the promise of the monoid context. But the interpretation context isn't additive - it's a monad!
-  //the monoid here is the endofunctor - it's what we're combining together. As such, when we begin, our Free structure of
-  //naked ops is fine just with an Id monad.
-  //
-  //
-
-    
-
-  // def trace[F[_]] = λ[F ~> FreeT[F, State[History, ?], ?]](_ => ???)
-
-  // def compAndTrace[F[_], G[_]](comp: F ~> G) =
-  //   λ[F ~> FreeT[G, State[History, ?], ?]](_ => ???)
-
-
-  // def traceActions[V](actions: Free[Action, V]): FreeT[Action, State[History, ?], V] =
-  //   actions.foldMap(trace)
-
-  // def traceLogActions[V](tracedActions: FreeT[Action, State[History, ?], V]): FreeT[LogAction, State[History, ?], V] = {
-  //   tracedActions
-  //     .mapK(λ[State[History, ?] ~> Free[LogAction, ?]](_ => ???)) //this bizarrely does very little...
-  //     .foldMap(compActions)
-  //     .foldMap(trace)  //but this trace is disconnected from the original...
-  // }
-
-  //but, tracing at each layer and then combining at the borders will remove the sequence of the actions 
-  //WE CAN'T TRACE PER-LAYER! And that means that the state-accumulation has to be part of the compilation step each time,
-  //passed along as an exterior wrapper of the ADT.
-
-  //a StateT[Action, History, V] becomes a StateT[LogAction, History, V], accumulating its state as it goes
-  //compilation then becomes a two-stage thing - the outer compilation delegates to the inner one
 
   import cats.instances.int._
   import cats.instances.list._
@@ -417,270 +518,10 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
 
   }
 
-  //but as soon as we start dealing in Nones, we have to accept the possibility of Nones seeping out and up, right to the very top,
-  //unless we have some arbitrary conversion from none to Free...
-
-  //though... you know... with our transformations anyway, not only do we have the possibility of multiple instructions per base instruction,
-  //there's also the likelihood of fewer high-level actions - as in, low-level actions are to be grouped together, wittled down, suppressed.
-  //Reads in the business logic may be served from a cache and not be translated to outer instructions at all.
-
-  //so translating to Frees at every step is not sufficient anyway. The idea might be for a stateful interpreter to iterate through the inner Free,
-  //which would be kinda simple, but we want to only swap out our outermost layer. Cacheing etc is part of our app.
-
-  //If we are in the business of iteratively layering our domain logic outwards - which we are! - then, in our transformations, we need to able to
-  //turn multiple domain actions into only a few outer ones. For this we could firstly use an Option alongside our Free - but if we were to do so no information
-  //would escape each segment, being bulwarked defensively by the Option wrapper. Instead of returning puny Option parts, which can't be reassembled as a None
-  //is a complete suppression of info (except for its type), a transformation of many into one must be exactly that, a transformation that isn't natural... 
-
-  //we need to course through our subject and build up shit
-  //a natural transform is too restrictive here - via a fold such a transform can project to zero or more per section, but there is no possibility of cross-section logic
-  //for this, we'd start off with the most accurate relation - the simple, honest function.
-  //
-
-  //Wrapping in Option allows us to prepend valueless state contexts
-  //Free[Traced[B, ?], None], Free[Traced[B, ?], Some(12)]
-  //though it feels like I'll need to extract values from their instructions if I'm doing this
-
-  //λ[V => Free[State[History, ?], Option[V]]] 
-  //but we can't do yer nice Free operations on such a lambda - the outer wrapping needs to be Free
-  //nah... I think we can actually...
-  //
-
-
-
-    //   ta.runEmpty.value match {
-    //     case (h, Some(a)) => a2fb(a).mapK(trace)   //need to re-inject h here...
-    //     case (h, n@None) => Free.liftF(State.set(h).map(_ => n.map(a2fb))) //      T.lift(n).modify(_ => h))
-    //   }
-    // })
-
-//
-//
-//
-//
-//
-//
-
-      // val q = ta.map(a => a2fb(a))
-
-      
-
-      // val (h, a) = ta.runEmpty.value
-
-      // val ftb = a2fb(a).mapK(trace)
-
-      // ftb.
-
-
-      // val p = Free.liftF[λ[V => State[History, B[V]]], Unit](State.set(h).map(_ => ???))
-      // val r = p.flatMap(_ => ftb)
-
-      // p.foldMap(f: FunctionK[ => IndexedStateT[Eval, List[Int], List[Int], B[V]], M])
-
-
-
-      //but this trick of adding a Free to the beginning relies on the Free being of the same context as that of our continuations
-      //the first step of our projection is expecting an argument - but what?
-      //the result of some previous, exterior step, which we ourselves receive via 'sa'
-
-      //so, again, our starting context needs to be correctly typed, and this requires seeding nicely with an empty value
-      //as long as our contextual type includes our instruction ADT, which never has a zero as we want it to be completely free,
-      //we can't summon up a nobbled starting point.
-
-      //if our context were just State[History, ?], then a State[History, Unit] would happily suffice. 
-      //
-  //with a single State, we can contramap, but here we don't have a single State, but a separated sequence of them
-  //the very first State needs contramapping
-  //
-
-
-
-
-  //what do we need to do with H? Nothing? We don't need to look into it at this point
-  //we only care about our current step.
-
-  //BUT WE DO, YOU ARSE. Because the step passed in relates exactly to our own step. We never care about
-  //previous steps. But state from the lower levelsof processing of our step have to be passed upwards.
-
-  //so we do need to run, and our H does need passing upwards as part of our projected fsb.
-  //We need an empty State[H, _], but not contributing to any Free structure. It needs to be hidden, tacked onto then
-  //beginning untraceably.
-
-  //Q: is there a Free instruction that skips interpretation? It'd seem pointless if that were so.
-  //the hidden bits are all in the connecting tissues of the functional mappings - ie between the yieldings
-  //of instructions.
-
-  //so we need a special mapping before the very first yielding, and with it some way of pre-supplying a base of state
-  //to proceed from in this particular step.
-
-  //which will be a kind of overlay, a kind of wrapping of the more pristine Free of our primitive projeciton.
-  //First, we need the pristine one, then the improved, injected one.
-
-
-      //don't need to thread free through, but re-represent it
-      //what does need threading through is the state only
-
-      //we pass through no structure, as the driver of our mapping does that; all we need to do is return the structure
-      //proper to our current projection. But then the composable state functions we return have to be re-composable by the outside executor
-      //
-      //the natural transform can't be applied eagerly, otherwise our runEmpty would make no sense - it needs to be ready populated by
-      //the previous stages. When the output Free is iterated, only then will the transforms be applied - so the runEmpty above is a timely
-      //unpacking of the info as it passes through. We compose our nicely typed functions to eventually perform an actual execution - this
-      //here is the actual execution
-
-      //Free[State[A]]
-      // ~> State[A]
-      // ~> State[Free[B]]
-      // ~> (H, Free[B])          <- the problem is that we throw away the received state at this point - we NEED to keep hold of this
-      // ~> (H, Free[State[B]])
-      //
-      //BUT! how to put the H back into the Free[State[B]], eh? BIG QUESTION.
-
-
-
-    //   val g = ta.map(a => fab(a)).flatMap(b => {
-
-    //     val c = b.mapK(trace)
-
-    //     //flatMap requires a state to flatten
-    //     //we can't just arbitrarily give it any old Free
-    //     //we need some way of popping the Free from our mapping outside
-    //     //in some kind of sequencing manouvre
-
-    //     //we start off with a State[A], from which we project a State[Free[B]]
-    //     //well... in the very start we have a Free[State[A]]
-    //     //then through our translation we get a Free[Free[State[B]]]
-    //     //but all this is fine
-
-    //     //inside the gubbins of the outer translation,
-    //     //we begin with a State[A], and project to a State[Free[B]]
-    //     //we need to get the structure of the Free outside of the state
-    //     //the structure of the wrapper should be similar-ish
-
-    //     //for each state, we want to realise the 
-
-
-        
-
-    //     State.set(List())
-    //   })
-
-    //   // val x = ta.map(fab(_)).flatMap(_.map(b => State.set(List()).map(_ => b) )))
-
-    //   //flatMap will only give you a State however
-
-    //   g
-    // })
 
   def traceActions2[V](actions: Free[Action, V]): Free[Traced[Action, ?], V] =
     actions.mapK(trace)
 
-
-
-  // def compLogActions[V](tracedActions: FreeT[Action, State[History, ?], V]): FreeT[LogAction, State[History, ?], V] =
-  //   tracedActions.(interp: (Action[FreeT[Action,  => IndexedStateT[Eval, List[Int], List[Int], β$12$], V]]) => IndexedStateT[Eval, List[Int], List[Int], FreeT[Action,  => IndexedStateT[Eval, List[Int], List[Int], β$12$], V]])
-  //   tracedActions.foldMap(λ[Action ~> FreeT[LogAction, State[History, ?], ?]](_ => ???))
-
-
-  //another go below... wrapping too closely in StateT requires our ADTs to implement various typeclasses - maybe we can do it with state only at the top?
-  //Free keeps our ADT in cotton wool; if we expand it out, we lose its handy protection
-
-
-
-  // def traceActions2[V](actions: Free[Action, V]): StateT[Free[Action, ?], History, V] = {
-  //   StateT.lift[Free[Action, ?], History, V](actions)
-  // }
-
-  // def compTraceActions[V](actions: Free[Action, V]): StateT[Free[Action, ?], History, V] = {
-  //   traceActions2(actions)
-  //     .flatMap(fas: (V) => IndexedStateT[ => Free[Action, β$18$], List[Int], SC, B])
-  //   actions.foldMap(λ[Action ~> StateT[Free[Action, ?], History, ?]](_ => ???))
-  // }
-
-  
-
-
-
-  //all is traced, from the bootom upwards
-  //so we'realways dealing in StateT's,rightfrom the off
-  //
-
-  //
-  //
-
-    // actions
-    //   .foldMap(compActions.andThen(trace).andThen(resequence))
-
-
-  //a trace could just take a Free as input, as standard
-
-
-//
-//
-//
-
-
-
-
-  //but the flatten takes the laziness out of it, or rather ghettoizes it
-  //the question is whether this flattening killssome of the laziness
-
-  //the compilation has to return a composite Free, as we must insert ligatures
-  //kk
-  //
-
-
-
-  //tis fine: just need to extract the State, flatten the actions, and rewrap in a combined state
-  //and you extract the state by... 
-  //how do you get the state out of it then? 
-
-
-  //there's a question of whether our natural translation will be into a Free - why would it ever translate to a Free?
-  //kjj
-
-  //monads - are they lazy? Who knows. They're functions, of course.
-  //so when you're putting em together, you're not necessarily
-  //designating the exact invocation of em
-
-  //but how are they strung together? There's no iteration involved, necessarily.
-  //there'sa single lzy function, resolving to a single value. How can a list then be a monad?
-  //it must be a recursive monad, repeatedly yielding yet keeping something back.
-  //it yields by returning its own shape, but always with an unwrapped value at its foot.
-  //there's then little list-like about the above,despite it being monadic.
-
-  //but there is, dumbo! A free is list-like, as it is recursively unwrapped.
-  //so if you're flatmapping Frees, then you're composing layer within layer of functions,
-  //and this composition goes through the layers as if they weren't there
-
-  //or does it? The Free must somehow iterate through itself.
-  //and indeed it does, though i don't follow how it does so.
-
-  //so a flatmap will... not eagerly evaluate, but allow itself to be recombined structurally
-  //calling .flatMap is actually like quoting - it calcifies the operation as a value, to be interpreted at leisure
-  //and then only at the last possible moment is the structure stepped through.
-
-  //but still, even though it is lazy, the interpretation still follows a certain fixed path.
-  //but this path piles up layers of interpreters before actually reaching the original tree-like iterative structure
-  //at the bottom of the pot, is the pristine shape, all else is mapping, and each layer of mapping applies to each step of the original structure.
-
-  //and so.. a flatmap is absolutely fucking perfectly fine, thank you very much.
-
-  //but just hoping for monads gives you series...
-  //which is alright, except the series has to come *after* the state extraction
-
-  //given our traced actions
-  //the traces should be unwrapped from state
-  //and further translated
-  //while the states of both layers are combined
-  //it's all kinda similar to monads' flatmaps
-  //
-  //in fact, it's exactly the same: unwrap, map, recombine
-  //
-
-  // val traceLogActions = traceActions.andThen(λ[Traced[Action, ?] ~> Traced[LogAction, ?]](s => s.map .mapK(compileLogActions)
-
-  // val traceTransaction = λ[Action ~> Traced[Transaction, ?]](_ => ???)
 
 
   check((compilation: CompilationHistory[LogAction]) => {
@@ -688,17 +529,6 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
     true
   })
 
-
-  //go on then, why do we need a magical way to extract from an Action? This is needless.
-  //Our monad-wrangling should just involve Frees, surely - the Actions are effectively values
-  //passed about by the monadic mechanism
-
-  //the tracing needs to happen much sooner - our initial Free[Action, V] should be mapped to be Free[StateT[Action, History, V]] 
-  //that is - the State should be on the inside, with the Free mechanism still doing its gymnastics on the outside
-
-  //and so...
-  //a Free[StateT[Action, History, ?], V]
-  //from a Free[Action, V]
 
   import LogAction._
 
@@ -736,6 +566,7 @@ class ActionSpec extends FunSuite with Matchers with Discipline with Checkers {
       // case Pure(v) => ???
       case Load(name, offset) => ???
       case Commit(name, events) => ???
+      case _ => ???
     })
 
 
